@@ -1,6 +1,6 @@
 from django.contrib import admin, messages
 from django.shortcuts import redirect, render
-from django.urls import path
+from django.urls import path, reverse
 
 from workbooks.forms import WorkbookUploadForm
 from workbooks.services.importer import import_workbook
@@ -86,6 +86,14 @@ class WorkbookImportAdmin(admin.ModelAdmin):
         "updated_at",
     )
     inlines = [ImportChangeInline]
+
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.uploaded_by = request.user
+        super().save_model(request, obj, form, change)
+
+    def add_view(self, request, form_url="", extra_context=None):
+        return redirect(reverse("admin:dashboards_workbookimport_upload"))
 
     def get_urls(self):
         urls = super().get_urls()
