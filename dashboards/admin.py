@@ -1,9 +1,14 @@
+import logging
+
 from django.contrib import admin, messages
 from django.shortcuts import redirect, render
 from django.urls import path, reverse
 
 from workbooks.forms import WorkbookUploadForm
 from workbooks.services.importer import import_workbook
+from workbooks.validation import ValidationError
+
+log = logging.getLogger(__name__)
 
 from .models import (
     Company,
@@ -116,21 +121,32 @@ class WorkbookImportAdmin(admin.ModelAdmin):
             form = WorkbookUploadForm(request.POST, request.FILES)
             if form.is_valid():
                 upload = form.cleaned_data["workbook_file"]
+                validated = form.validated_upload
                 import_record = WorkbookImport.objects.create(
                     category=form.cleaned_data["category"],
                     uploaded_by=request.user,
-                    original_filename=upload.name,
+                    original_filename=validated.original_filename if validated else upload.name,
                     workbook_file=upload,
                 )
                 try:
                     result = import_workbook(import_record)
+                except ValidationError as exc:
+                    import_record.mark_failed(exc)
+                    log.warning("upload rejected: %s", exc)
+                    self.message_user(request, str(exc), level=messages.ERROR)
+                except NotImplementedError as exc:
+                    import_record.mark_failed(exc)
+                    log.warning("no parser for category: %s", exc)
+                    self.message_user(request, str(exc), level=messages.ERROR)
                 except Exception as exc:
                     import_record.mark_failed(exc)
-                    self.message_user(request, f"Workbook import failed: {exc}", level=messages.ERROR)
+                    log.exception("workbook import failed for record %s", import_record.pk)
+                    self.message_user(request, f"Import failed: {exc}", level=messages.ERROR)
                 else:
                     self.message_user(
                         request,
-                        f"Imported {result.row_count} values with {result.change_count} changes.",
+                        f"{import_record.original_filename} processed — "
+                        f"{result.row_count} values, {result.change_count} changes.",
                         level=messages.SUCCESS,
                     )
                 return redirect("admin:dashboards_workbookimport_change", import_record.pk)
