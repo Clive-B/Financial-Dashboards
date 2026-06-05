@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <main class="page">
+    <h1>Financial Dashboards</h1>
+    <div class="dashboard-list">
+      {% for category in categories %}
+        <a class="dashboard-card" href="{% url 'dashboard-detail' category.slug %}">
+          <span>{{ category.name }}</span>
+        </a>
+      {% empty %}
+        <p>No dashboards have been configured yet. Run <code>python manage.py seed_reference_data</code>.</p>
+      {% endfor %}
+    </div>
+  </main>
+{% endblock %}

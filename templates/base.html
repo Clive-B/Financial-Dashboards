@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Financial Dashboards</title>
+  <style>
+    body {
+      margin: 0;
+      background: #f6f8fb;
+      color: #17202a;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    .page {
+      width: min(1120px, calc(100% - 32px));
+      margin: 40px auto;
+    }
+    h1 {
+      font-size: 2rem;
+      margin: 0 0 24px;
+    }
+    .dashboard-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+    .dashboard-card {
+      display: block;
+      padding: 18px;
+      border: 1px solid #d9e2ec;
+      border-radius: 8px;
+      background: #fff;
+      color: #17202a;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    pre {
+      overflow: auto;
+      padding: 16px;
+      border-radius: 8px;
+      background: #111827;
+      color: #e5e7eb;
+    }
+  </style>
+</head>
+<body>
+  {% block content %}{% endblock %}
+</body>
+</html>

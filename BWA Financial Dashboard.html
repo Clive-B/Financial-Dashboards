@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>BWA Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', system-ui, 'Segoe UI', sans-serif; }
+    body { background: #242F3F; padding: 30px 24px 50px; }
+    .dashboard-container { max-width: 1400px; margin: 0 auto; }
+    .header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 18px; margin-bottom: 32px; background: rgba(255,255,255,0.1); backdrop-filter: blur(8px); border-radius: 40px; padding: 16px 28px; border: 1px solid rgba(255,255,255,0.15); }
+    .title-section h1 { font-size: 1.8rem; font-weight: 700; background: linear-gradient(120deg, #FFFFFF, #FFD966); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .title-section p { color: #CCDDE8; font-size: 0.85rem; margin-top: 6px; }
+    .controls { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+    .upload-btn { background: #FFD966; color: #242F3F; border: none; padding: 9px 20px; border-radius: 48px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
+    .upload-btn:hover { background: #FFE08C; }
+    .year-selector { background: #1A2533; border-radius: 48px; padding: 6px 16px; display: flex; align-items: center; gap: 12px; border: 1px solid #3A4A5C; }
+    .year-selector label { font-weight: 700; color: #5DE4C7; font-size: 0.82rem; }
+    select { background: #2C3E4E; border: 1px solid #5A6F82; border-radius: 32px; padding: 8px 16px; font-weight: 600; color: white; cursor: pointer; }
+    .status-badge { background: #00000030; color: #FFD966; padding: 7px 14px; border-radius: 60px; font-size: 0.75rem; border: 1px solid #FFD96630; font-weight: 800; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 20px; margin-bottom: 36px; }
+    .kpi-card { background: #1E2A36; border-radius: 28px; padding: 20px 18px; border: 1px solid #3A4A5C; transition: 0.2s; }
+    .kpi-card:hover { background: #253341; transform: translateY(-3px); }
+    .kpi-title { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; color: #9BB7D4; }
+    .kpi-value { font-size: 1.62rem; font-weight: 900; color: #5DE4C7; margin-top: 8px; overflow-wrap: anywhere; }
+    .kpi-sub { font-size: 0.72rem; color: #A0B8CE; border-top: 1px solid #2F4050; margin-top: 10px; padding-top: 9px; line-height: 1.45; }
+    .charts-row { display: flex; flex-wrap: wrap; gap: 28px; margin-bottom: 40px; }
+    .chart-card { flex: 1; min-width: 280px; background: #1E2A36; border-radius: 32px; padding: 20px; border: 1px solid #3A4A5C; }
+    .chart-card.full { flex-basis: 100%; }
+    .chart-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+    .chart-header h3 { font-weight: 800; font-size: 1.15rem; color: #FFD966; }
+    .download-btn { background: #2C3E4E; border: 1px solid #5A6F82; padding: 8px 14px; border-radius: 40px; font-size: 0.72rem; font-weight: 700; cursor: pointer; color: #FFD966; display: flex; align-items: center; gap: 6px; }
+    .download-btn:hover { background: #3A5064; }
+    canvas { max-height: 320px; width: 100%; }
+    .insights-card { background: linear-gradient(145deg, #172330, #1E2A36); border-radius: 32px; padding: 24px 28px; margin: 0 0 40px; border: 1px solid #3A4A5C; box-shadow: 0 12px 30px rgba(0,0,0,0.18); }
+    .insights-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+    .insights-header h3 { color: #FFD966; font-size: 1.25rem; font-weight: 900; display: flex; gap: 10px; align-items: center; }
+    .insights-pill { background: #00000030; color: #5DE4C7; border: 1px solid #5DE4C740; padding: 7px 14px; border-radius: 50px; font-size: 0.72rem; font-weight: 800; }
+    .insights-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; margin-bottom: 18px; }
+    .insight-mini-card { background: #111D29; border: 1px solid #2F4050; border-radius: 22px; padding: 16px; }
+    .insight-mini-title { color: #9BB7D4; font-size: 0.72rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+    .insight-mini-value { color: #5DE4C7; font-size: 1.05rem; font-weight: 900; line-height: 1.35; }
+    .insight-mini-note { color: #CCDDE8; font-size: 0.76rem; margin-top: 8px; line-height: 1.45; }
+    .insight-writeup { background: #0F1A24; border-left: 6px solid #5DE4C7; border-radius: 22px; padding: 18px 20px; color: #E0ECF5; line-height: 1.65; font-size: 0.88rem; }
+    .insight-writeup p { margin-bottom: 12px; }
+    .update-list { margin: 8px 0 0 18px; }
+    .update-list li { margin-bottom: 7px; }
+    .data-limitations-note { background: #0F1A24; border: 1px solid #2F4050; border-left: 6px solid #FFD966; border-radius: 18px; color: #D7E7F2; font-size: 0.82rem; line-height: 1.55; padding: 14px 16px; margin: 0 0 18px; }
+    .data-limitations-note strong { color: #FFD966; }
+    .table-filter-bar { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin: 8px 0 14px; background: #172330; border: 1px solid #3A4A5C; border-radius: 24px; padding: 12px; }
+    .table-filter-bar label { color: #5DE4C7; font-size: 0.75rem; font-weight: 800; display: flex; gap: 8px; align-items: center; }
+    .table-filter-bar select { min-width: 170px; }
+    .financial-table-wrapper { overflow-x: auto; background: #1E2A36; border-radius: 28px; padding: 16px; margin-top: 20px; border: 1px solid #3A4A5C; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.76rem; }
+    th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #2F4050; color: #E0ECF5; white-space: nowrap; }
+    th { background-color: #0F1A24; color: #FFD966; }
+    .item-name { color: #CCDDE8; font-weight: 800; }
+    .empty-table-note { color: #A0B8CE; text-align: center; padding: 16px; }
+    .notes-card { background: linear-gradient(145deg, #172330, #1E2A36); border-radius: 32px; padding: 24px 28px; margin: 0 0 40px; border: 1px solid #3A4A5C; box-shadow: 0 12px 30px rgba(0,0,0,0.18); }
+    .notes-textarea { width: 100%; min-height: 150px; resize: vertical; background: #0F1A24; border: 1px solid #3A4A5C; border-radius: 22px; padding: 16px 18px; color: #E0ECF5; line-height: 1.55; font-size: 0.92rem; outline: none; }
+    .notes-textarea:focus { border-color: #5DE4C7; box-shadow: 0 0 0 3px #5DE4C720; }
+    .notes-actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 12px; color: #9BB7D4; font-size: 0.75rem; }
+    .footer-note { text-align: center; margin-top: 40px; font-size: 0.72rem; color: #9BB7D4; line-height: 1.5; }
+    @media (max-width: 780px) {
+      body { padding: 20px 16px; }
+      .header { border-radius: 28px; padding: 16px; }
+      .title-section h1 { font-size: 1.35rem; }
+      .kpi-value { font-size: 1.25rem; }
+      .chart-card { border-radius: 24px; }
+      th, td { white-space: normal; }
+    }
+  </style>
+</head>
+<body>
+<div class="dashboard-container">
+  <div class="header">
+    <div class="title-section">
+      <h1><i class="fas fa-wifi" style="color:#FFD966;"></i> BWA Dashboard</h1>
+      <p>Upload BWA/Telesol financial extracts with sheets named by year. Updated figures are compared, applied, and remembered in this browser.</p>
+    </div>
+    <div class="controls">
+      <button class="upload-btn" id="uploadWorkbookBtn"><i class="fas fa-file-excel"></i> Upload Financial Extract</button>
+      <div class="year-selector">
+        <label><i class="fas fa-calendar-alt"></i> Year:</label>
+        <select id="yearSelect"></select>
+      </div>
+      <div class="status-badge" id="dataStatus"><i class="fas fa-database"></i> Embedded data</div>
+    </div>
+  </div>
+
+  <div class="kpi-grid" id="kpiContainer"></div>
+
+  <div class="insights-card">
+    <div class="insights-header">
+      <h3><i class="fas fa-lightbulb"></i> Executive Intelligence</h3>
+      <span class="insights-pill" id="insightsScope">Latest populated year</span>
+    </div>
+    <div id="insightsContent"></div>
+  </div>
+
+  <div class="charts-row">
+    <div class="chart-card full">
+      <div class="chart-header">
+        <h3>Revenue, EBITDA, and Net Profit</h3>
+        <button class="download-btn" id="downloadPerformanceBtn"><i class="fas fa-camera"></i> Download</button>
+      </div>
+      <canvas id="performanceChart"></canvas>
+    </div>
+  </div>
+
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3>Profitability Margins</h3>
+        <button class="download-btn" id="downloadMarginBtn"><i class="fas fa-camera"></i> Download</button>
+      </div>
+      <canvas id="marginChart"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3>Expenditure, Cost of Sales, and CAPEX</h3>
+        <button class="download-btn" id="downloadSpendBtn"><i class="fas fa-camera"></i> Download</button>
+      </div>
+      <canvas id="spendChart"></canvas>
+    </div>
+  </div>
+
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3>Assets, Liabilities, Equity, and Debt</h3>
+        <button class="download-btn" id="downloadBalanceBtn"><i class="fas fa-camera"></i> Download</button>
+      </div>
+      <canvas id="balanceChart"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3>Enterprise Value Trend</h3>
+        <button class="download-btn" id="downloadEvBtn"><i class="fas fa-camera"></i> Download</button>
+      </div>
+      <canvas id="enterpriseChart"></canvas>
+    </div>
+  </div>
+
+  <div class="chart-card full">
+    <div class="chart-header">
+      <h3>Complete Financial Data</h3>
+      <button class="download-btn" id="downloadTableBtn"><i class="fas fa-download"></i> Export CSV</button>
+    </div>
+    <div class="table-filter-bar">
+      <label><i class="fas fa-calendar-alt"></i> Table Year:
+        <select id="tableYearFilter">
+          <option value="dashboard">Dashboard Year Selection</option>
+          <option value="all">All Years</option>
+        </select>
+      </label>
+    </div>
+    <div class="financial-table-wrapper" id="financialTableContainer"></div>
+  </div>
+
+  <div class="insights-card" style="margin-top:40px;">
+    <div class="insights-header">
+      <h3><i class="fas fa-rotate"></i> Workbook Update Check</h3>
+      <span class="insights-pill" id="updateScope">No upload in this session</span>
+    </div>
+    <div class="insight-writeup" id="updateLog">
+      <p>Upload a revised workbook to compare it against the embedded or saved dashboard figures. New years and changed figures will be listed here before the dashboard refreshes.</p>
+    </div>
+  </div>
+
+  <div class="notes-card">
+    <div class="insights-header">
+      <h3><i class="fas fa-pen-to-square"></i> Notes</h3>
+      <span class="insights-pill" id="notesStatus">Autosaved in this browser</span>
+    </div>
+    <textarea class="notes-textarea" id="dashboardNotes" placeholder="Type your notes here..."></textarea>
+    <div class="notes-actions">
+      <span>Notes are saved on this device for this dashboard.</span>
+      <button class="download-btn" id="clearNotesBtn"><i class="fas fa-trash"></i> Clear Notes</button>
+    </div>
+  </div>
+
+  <div class="footer-note">
+    Embedded figures are the default dataset. Uploaded figures are stored in this browser with localStorage and automatically loaded the next time this file is opened.
+  </div>
+</div>
+
+<script>
+  const CACHE_KEY = "bwaTelesolFinancialDashboardSnapshot_v1";
+  const NOTES_KEY = "bwaTelesolFinancialDashboardNotes_v1";
+  const COMPANY_NAME = "Telesol";
+  const metricRows = [
+    { key: "revenue", label: "Revenue", type: "money", aliases: ["REVENUE"] },
+    { key: "expenditure", label: "Expenditure", type: "money", aliases: ["EXPENDITURE"] },
+    { key: "costOfSales", label: "Cost of Sales", type: "money", aliases: ["COST OF SALES"] },
+    { key: "grossProfit", label: "Gross Profit", type: "money", aliases: ["GROSS PROFIT"] },
+    { key: "ebitda", label: "EBITDA", type: "money", aliases: ["EBITDA"] },
+    { key: "ebitdaMargin", label: "EBITDA Margin", type: "percent", aliases: ["EBITDA MARGIN"] },
+    { key: "netProfit", label: "Net Profit", type: "money", aliases: ["NET PROFIT"] },
+    { key: "capex", label: "CAPEX", type: "money", aliases: ["CAPEX"] },
+    { key: "netProfitMargin", label: "Net Profit Margin", type: "percent", aliases: ["NET PROFIT MARGIN"] },
+    { key: "netProfitBeforeTax", label: "Net Profit Before Tax", type: "money", aliases: ["NET PROFIT BEFORE TAX"] },
+    { key: "currentAssets", label: "Current Assets", type: "money", aliases: ["CURRENT ASSETS"] },
+    { key: "nonCurrentAssets", label: "Non-current Assets", type: "money", aliases: ["NON-CURRENT ASSETS", "NON CURRENT ASSETS"] },
+    { key: "totalAssets", label: "Total Assets", type: "money", aliases: ["TOTAL ASSETS"] },
+    { key: "currentLiabilities", label: "Current Liabilities", type: "money", aliases: ["CURRENT LIABILITIES"] },
+    { key: "nonCurrentLiabilities", label: "Non-current Liabilities", type: "money", aliases: ["NON-CURRENT LIABILITIES", "NON CURRENT LIABILITIES"] },
+    { key: "totalLiabilities", label: "Total Liabilities", type: "money", aliases: ["TOTAL LIABILITIES"] },
+    { key: "cash", label: "Cash and Cash Equivalents", type: "money", aliases: ["TOTAL CASH AND CASH EQUIVALENTS", "CASH AND CASH EQUIVALENTS"] },
+    { key: "totalEquity", label: "Total Equity", type: "money", aliases: ["TOTAL EQUITY"] },
+    { key: "totalDebt", label: "Total Debt", type: "money", aliases: ["TOTAL DEBT"] },
+    { key: "enterpriseValue", label: "Total Enterprise Value", type: "money", aliases: ["TOTAL ENTERPRISE VALUE", "ENTERPRISE VALUE"] }
+  ];
+
+  const DEFAULT_PAYLOAD = {
+    version: 1,
+    savedAt: "embedded-from-bwa-telesol-financial-extracts",
+    years: [2021, 2022, 2023, 2024, 2025],
+    financial: {
+      "2021": {
+        revenue: 1720193, expenditure: 1012443, costOfSales: 646121, grossProfit: 1074072,
+        ebitda: 61629, ebitdaMargin: 0.0358, netProfit: 1939, capex: null,
+        netProfitMargin: 0.0011, netProfitBeforeTax: 10384, currentAssets: 515942,
+        nonCurrentAssets: 29257902, totalAssets: 29773844, currentLiabilities: 210501,
+        nonCurrentLiabilities: 62034092, totalLiabilities: 62244593, cash: 312993,
+        totalEquity: -32470749, totalDebt: 715107, enterpriseValue: -32068635
+      },
+      "2022": {
+        revenue: 1589611, expenditure: 1077219, costOfSales: 380123, grossProfit: 1209488,
+        ebitda: 132269, ebitdaMargin: 0.0832, netProfit: 67136, capex: null,
+        netProfitMargin: 0.0422, netProfitBeforeTax: 83707, currentAssets: 474247,
+        nonCurrentAssets: 29228919, totalAssets: 29703166, currentLiabilities: 220145,
+        nonCurrentLiabilities: 61886633, totalLiabilities: 62106778, cash: 467108,
+        totalEquity: -32403613, totalDebt: 565997, enterpriseValue: -32304724
+      },
+      "2023": emptyYear(),
+      "2024": emptyYear(),
+      "2025": emptyYear()
+    }
+  };
+
+  let currentPayload = loadPayload() || DEFAULT_PAYLOAD;
+  let financialData = currentPayload.financial || {};
+  let yearsList = normalizeYears(currentPayload.years || Object.keys(financialData));
+  let charts = {};
+
+  function emptyYear() {
+    return {
+      revenue: null, expenditure: null, costOfSales: null, grossProfit: null, ebitda: null, ebitdaMargin: null,
+      netProfit: null, capex: null, netProfitMargin: null, netProfitBeforeTax: null, currentAssets: null,
+      nonCurrentAssets: null, totalAssets: null, currentLiabilities: null, nonCurrentLiabilities: null,
+      totalLiabilities: null, cash: null, totalEquity: null, totalDebt: null, enterpriseValue: null
+    };
+  }
+
+  function normalizeYears(years) {
+    return [...new Set((years || []).map(y => Number(y)).filter(y => !isNaN(y)))].sort((a, b) => a - b);
+  }
+
+  function hasValue(v) {
+    return v !== null && v !== undefined && v !== "" && !isNaN(Number(v));
+  }
+
+  function hasAnyData(year) {
+    const d = financialData[String(year)] || {};
+    return metricRows.some(m => hasValue(d[m.key]));
+  }
+
+  function populatedYears() {
+    return yearsList.filter(hasAnyData);
+  }
+
+  function latestPopulatedYear() {
+    const populated = populatedYears();
+    return populated.length ? populated[populated.length - 1] : yearsList[yearsList.length - 1];
+  }
+
+  function selectedYear() {
+    return document.getElementById("yearSelect").value || String(latestPopulatedYear() || "all");
+  }
+
+  function yearScope(yearValue) {
+    if(yearValue === "all") return populatedYears();
+    const y = Number(yearValue);
+    return isNaN(y) ? populatedYears() : [y];
+  }
+
+  function moneyValue(v) {
+    return hasValue(v) ? Number(v) : null;
+  }
+
+  function formatMoney(v) {
+    if(!hasValue(v)) return "N/A";
+    const n = Number(v);
+    const abs = Math.abs(n);
+    if(abs >= 1e9) return "GHS " + (n / 1e9).toFixed(2) + "B";
+    if(abs >= 1e6) return "GHS " + (n / 1e6).toFixed(1) + "M";
+    return "GHS " + n.toLocaleString();
+  }
+
+  function formatFullMoney(v) {
+    return hasValue(v) ? "GHS " + Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 }) : "N/A";
+  }
+
+  function formatPercent(v) {
+    return hasValue(v) ? (Number(v) * 100).toFixed(2) + "%" : "N/A";
+  }
+
+  function formatByType(v, type) {
+    return type === "percent" ? formatPercent(v) : formatFullMoney(v);
+  }
+
+  function pctChange(current, previous) {
+    if(!hasValue(current) || !hasValue(previous) || Number(previous) === 0) return null;
+    return ((Number(current) - Number(previous)) / Math.abs(Number(previous))) * 100;
+  }
+
+  function previousPopulatedYear(year) {
+    const populated = populatedYears();
+    const idx = populated.indexOf(Number(year));
+    return idx > 0 ? populated[idx - 1] : null;
+  }
+
+  function setChartDefaults() {
+    Chart.defaults.color = "#CCDDE8";
+    Chart.defaults.borderColor = "#33495C";
+    Chart.defaults.font.family = "'Inter', system-ui, 'Segoe UI', sans-serif";
+  }
+
+  function chartMoney(v) {
+    return hasValue(v) ? Number(v) / 1e6 : null;
+  }
+
+  function fillYearSelect() {
+    const select = document.getElementById("yearSelect");
+    const current = select.value || String(latestPopulatedYear() || "all");
+    select.innerHTML = '<option value="all">All Years</option>' + yearsList.map(y => `<option value="${y}">${y}</option>`).join("");
+    select.value = yearsList.includes(Number(current)) || current === "all" ? current : String(latestPopulatedYear() || "all");
+  }
+
+  function updateStatus() {
+    const status = document.getElementById("dataStatus");
+    const savedAt = currentPayload.savedAt || "";
+    if(savedAt && !savedAt.startsWith("embedded")) {
+      status.innerHTML = `<i class="fas fa-database"></i> Saved ${new Date(savedAt).toLocaleString()}`;
+    } else {
+      status.innerHTML = '<i class="fas fa-database"></i> Embedded data';
+    }
+  }
+
+  function updateKpis(yearValue) {
+    const scope = yearScope(yearValue);
+    const latest = yearValue === "all" ? latestPopulatedYear() : Number(yearValue);
+    const d = financialData[String(latest)] || {};
+    const prevYear = previousPopulatedYear(latest);
+    const prev = prevYear ? financialData[String(prevYear)] || {} : {};
+    const revenueGrowth = pctChange(d.revenue, prev.revenue);
+    const profitGrowth = pctChange(d.netProfit, prev.netProfit);
+    const totalRevenue = scope.reduce((sum, y) => sum + (moneyValue(financialData[String(y)]?.revenue) || 0), 0);
+    const totalProfit = scope.reduce((sum, y) => sum + (moneyValue(financialData[String(y)]?.netProfit) || 0), 0);
+    const totalEbitda = scope.reduce((sum, y) => sum + (moneyValue(financialData[String(y)]?.ebitda) || 0), 0);
+    const cards = yearValue === "all" ? [
+      ["Revenue", formatMoney(totalRevenue), `${scope.length} populated year total`],
+      ["EBITDA", formatMoney(totalEbitda), "Total EBITDA across selected years"],
+      ["Net Profit", formatMoney(totalProfit), "Total net profit across selected years"],
+      ["Latest Enterprise Value", formatMoney(d.enterpriseValue), `${latest || "N/A"} balance sheet signal`],
+      ["Latest EBITDA Margin", formatPercent(d.ebitdaMargin), `${latest || "N/A"} operating margin`],
+      ["Latest Net Profit Margin", formatPercent(d.netProfitMargin), `${latest || "N/A"} profit conversion`]
+    ] : [
+      ["Revenue", formatMoney(d.revenue), revenueGrowth === null ? "No prior populated year for growth" : `${revenueGrowth.toFixed(1)}% vs ${prevYear}`],
+      ["EBITDA", formatMoney(d.ebitda), `Margin: ${formatPercent(d.ebitdaMargin)}`],
+      ["Net Profit", formatMoney(d.netProfit), profitGrowth === null ? "No prior populated year for growth" : `${profitGrowth.toFixed(1)}% vs ${prevYear}`],
+      ["Total Assets", formatMoney(d.totalAssets), `Liabilities: ${formatMoney(d.totalLiabilities)}`],
+      ["Total Debt", formatMoney(d.totalDebt), `Cash: ${formatMoney(d.cash)}`],
+      ["Enterprise Value", formatMoney(d.enterpriseValue), `Equity: ${formatMoney(d.totalEquity)}`]
+    ];
+    document.getElementById("kpiContainer").innerHTML = cards.map(card => `<div class="kpi-card"><div class="kpi-title">${card[0]}</div><div class="kpi-value">${card[1]}</div><div class="kpi-sub">${card[2]}</div></div>`).join("");
+  }
+
+  function updateInsights(yearValue) {
+    const scopeEl = document.getElementById("insightsScope");
+    const content = document.getElementById("insightsContent");
+    const latest = yearValue === "all" ? latestPopulatedYear() : Number(yearValue);
+    const d = financialData[String(latest)] || {};
+    const prevYear = previousPopulatedYear(latest);
+    const prev = prevYear ? financialData[String(prevYear)] || {} : {};
+    const revenueGrowth = pctChange(d.revenue, prev.revenue);
+    const profitGrowth = pctChange(d.netProfit, prev.netProfit);
+    scopeEl.textContent = yearValue === "all" ? `All populated years through ${latest || "N/A"}` : `${latest}`;
+    if(!hasAnyData(latest)) {
+      content.innerHTML = '<div class="insight-writeup"><p>No populated financial values are available for the selected year. Upload a revised workbook if this year has been updated.</p></div>';
+      return;
+    }
+    const debtToAssets = hasValue(d.totalDebt) && hasValue(d.totalAssets) && Number(d.totalAssets) !== 0 ? Number(d.totalDebt) / Number(d.totalAssets) : null;
+    const liabilityToAssets = hasValue(d.totalLiabilities) && hasValue(d.totalAssets) && Number(d.totalAssets) !== 0 ? Number(d.totalLiabilities) / Number(d.totalAssets) : null;
+    const expenseToRevenue = hasValue(d.expenditure) && hasValue(d.revenue) && Number(d.revenue) !== 0 ? Number(d.expenditure) / Number(d.revenue) : null;
+    const profitLabel = Number(d.netProfit) < 0 ? "Net Loss" : "Net Profit";
+    const profitNarrative = Number(d.netProfit) < 0 ? `net loss of <strong>${formatMoney(Math.abs(Number(d.netProfit)))}</strong>` : `net profit of <strong>${formatMoney(d.netProfit)}</strong>`;
+    const marginNarrative = Number(d.netProfitMargin) < 0 ? `net loss margin is <strong>${formatPercent(Math.abs(Number(d.netProfitMargin)))}</strong>` : `net profit margin is <strong>${formatPercent(d.netProfitMargin)}</strong>`;
+    const expenseInterpretation = expenseToRevenue === null ? "Operating expense-to-revenue analysis is unavailable for this year." : (expenseToRevenue >= 1 ? "Operating expenses are broadly equal to or above revenue, indicating significant cost pressure." : (expenseToRevenue >= 0.8 ? "Operating expenses remain high relative to revenue, even though they are below revenue." : "Operating expenses are comparatively contained relative to revenue."));
+    const selectedScopeYears = yearValue === "all" ? yearsList : [Number(yearValue)];
+    const availableScopeYears = selectedScopeYears.filter(y => hasAnyData(y));
+    const missingScopeYears = selectedScopeYears.filter(y => !hasAnyData(y));
+    const miniCards = [
+      ["Revenue Scale", formatMoney(d.revenue), revenueGrowth === null ? "Growth comparison unavailable" : `${revenueGrowth.toFixed(1)}% movement vs ${prevYear}`],
+      [profitLabel, Number(d.netProfit) < 0 ? formatMoney(Math.abs(Number(d.netProfit))) : formatMoney(d.netProfit), profitGrowth === null ? "Profit movement unavailable" : `${profitGrowth.toFixed(1)}% movement vs ${prevYear}`],
+      ["EBITDA Margin", formatPercent(d.ebitdaMargin), "Operating earnings as a share of revenue"],
+      ["Debt to Assets", formatPercent(debtToAssets), "Debt load compared with asset base"]
+    ];
+    let narrative = `<p><strong>Executive reading:</strong> In ${latest}, ${COMPANY_NAME} recorded revenue of <strong>${formatMoney(d.revenue)}</strong>, EBITDA of <strong>${formatMoney(d.ebitda)}</strong>, and ${profitNarrative}.</p>`;
+    narrative += `<p><strong>Profitability:</strong> EBITDA margin stands at <strong>${formatPercent(d.ebitdaMargin)}</strong>, while ${marginNarrative}. This separates operating strength from the final profit outcome after below-EBITDA movements.</p>`;
+    if(expenseToRevenue !== null) narrative += `<p><strong>Operating efficiency:</strong> Operating expenses represent about <strong>${(expenseToRevenue * 100).toFixed(1)}%</strong> of revenue in ${latest}. ${expenseInterpretation}</p>`;
+    narrative += `<p><strong>Balance sheet:</strong> Total assets are <strong>${formatMoney(d.totalAssets)}</strong>, liabilities are <strong>${formatMoney(d.totalLiabilities)}</strong>, and total debt is <strong>${formatMoney(d.totalDebt)}</strong>. Liability-to-assets is <strong>${formatPercent(liabilityToAssets)}</strong>.</p>`;
+    narrative += `<p><strong>Enterprise value:</strong> The enterprise value shown for ${latest} is <strong>${formatMoney(d.enterpriseValue)}</strong>. Use this together with revenue, EBITDA, and debt to judge whether valuation movement is being supported by operating performance.</p>`;
+    const limitationsHtml = `<div class="data-limitations-note"><strong>Data limitations:</strong> This dashboard uses the available populated records in the workbook. ${missingScopeYears.length ? `The selected scope includes blank or unavailable year(s): ${missingScopeYears.join(", ")}.` : `The selected scope has ${availableScopeYears.length} populated year(s).`} Read trends, ratios, and rankings together with the source workbook and available-year coverage.</div>`;
+    content.innerHTML = `<div class="insights-grid">${miniCards.map(card => `<div class="insight-mini-card"><div class="insight-mini-title">${card[0]}</div><div class="insight-mini-value">${card[1]}</div><div class="insight-mini-note">${card[2]}</div></div>`).join("")}</div>${limitationsHtml}<div class="insight-writeup">${narrative}</div>`;
+  }
+
+  function renderCharts(yearValue) {
+    const labels = yearValue === "all" ? populatedYears().map(String) : [String(yearValue)];
+    const dataFor = key => labels.map(y => financialData[y]?.[key]);
+    const moneyFor = key => labels.map(y => chartMoney(financialData[y]?.[key]));
+    Object.values(charts).forEach(chart => chart.destroy());
+    charts = {};
+    charts.performance = new Chart(document.getElementById("performanceChart"), {
+      type: yearValue === "all" ? "line" : "bar",
+      data: { labels, datasets: [
+        { label: "Revenue (GHS M)", data: moneyFor("revenue"), borderColor: "#FFD966", backgroundColor: "#FFD96699", tension: 0.25 },
+        { label: "EBITDA (GHS M)", data: moneyFor("ebitda"), borderColor: "#5DE4C7", backgroundColor: "#5DE4C799", tension: 0.25 },
+        { label: "Net Profit (GHS M)", data: moneyFor("netProfit"), borderColor: "#E74C3C", backgroundColor: "#E74C3C99", tension: 0.25 }
+      ] },
+      options: { responsive: true, scales: { y: { title: { display: true, text: "GHS Millions", color: "#FFD966" } } } }
+    });
+    charts.margin = new Chart(document.getElementById("marginChart"), {
+      type: yearValue === "all" ? "line" : "bar",
+      data: { labels, datasets: [
+        { label: "EBITDA Margin", data: dataFor("ebitdaMargin").map(v => hasValue(v) ? Number(v) * 100 : null), borderColor: "#5DE4C7", backgroundColor: "#5DE4C799", tension: 0.25 },
+        { label: "Net Profit Margin", data: dataFor("netProfitMargin").map(v => hasValue(v) ? Number(v) * 100 : null), borderColor: "#FFD966", backgroundColor: "#FFD96699", tension: 0.25 }
+      ] },
+      options: { responsive: true, scales: { y: { title: { display: true, text: "Percent", color: "#FFD966" } } } }
+    });
+    charts.spend = new Chart(document.getElementById("spendChart"), {
+      type: yearValue === "all" ? "line" : "bar",
+      data: { labels, datasets: [
+        { label: "Expenditure (GHS M)", data: moneyFor("expenditure"), borderColor: "#3498DB", backgroundColor: "#3498DB99", tension: 0.25 },
+        { label: "Cost of Sales (GHS M)", data: moneyFor("costOfSales"), borderColor: "#E74C3C", backgroundColor: "#E74C3C99", tension: 0.25 },
+        { label: "CAPEX (GHS M)", data: moneyFor("capex"), borderColor: "#FFD966", backgroundColor: "#FFD96699", tension: 0.25 }
+      ] },
+      options: { responsive: true, scales: { y: { title: { display: true, text: "GHS Millions", color: "#FFD966" } } } }
+    });
+    charts.balance = new Chart(document.getElementById("balanceChart"), {
+      type: yearValue === "all" ? "line" : "bar",
+      data: { labels, datasets: [
+        { label: "Total Assets (GHS M)", data: moneyFor("totalAssets"), borderColor: "#5DE4C7", backgroundColor: "#5DE4C799", tension: 0.25 },
+        { label: "Total Liabilities (GHS M)", data: moneyFor("totalLiabilities"), borderColor: "#E74C3C", backgroundColor: "#E74C3C99", tension: 0.25 },
+        { label: "Total Equity (GHS M)", data: moneyFor("totalEquity"), borderColor: "#FFD966", backgroundColor: "#FFD96699", tension: 0.25 },
+        { label: "Total Debt (GHS M)", data: moneyFor("totalDebt"), borderColor: "#3498DB", backgroundColor: "#3498DB99", tension: 0.25 }
+      ] },
+      options: { responsive: true, scales: { y: { title: { display: true, text: "GHS Millions", color: "#FFD966" } } } }
+    });
+    charts.enterprise = new Chart(document.getElementById("enterpriseChart"), {
+      type: yearValue === "all" ? "line" : "bar",
+      data: { labels, datasets: [
+        { label: "Enterprise Value (GHS M)", data: moneyFor("enterpriseValue"), borderColor: "#FFD966", backgroundColor: "#FFD96699", fill: false, tension: 0.25 }
+      ] },
+      options: { responsive: true, scales: { y: { title: { display: true, text: "GHS Millions", color: "#FFD966" } } } }
+    });
+  }
+
+  function getTableYears() {
+    const mode = document.getElementById("tableYearFilter").value;
+    if(mode === "all") return yearsList;
+    const y = selectedYear();
+    return y === "all" ? yearsList : [Number(y)];
+  }
+
+  function buildTable() {
+    const years = getTableYears();
+    const container = document.getElementById("financialTableContainer");
+    if(!years.length) {
+      container.innerHTML = '<div class="empty-table-note">No financial data available.</div>';
+      return;
+    }
+    let html = '<table><thead><tr><th>Year</th><th>Financial Item</th><th>Telesol</th></tr></thead><tbody>';
+    years.forEach(y => {
+      const d = financialData[String(y)] || {};
+      metricRows.forEach(item => {
+        html += `<tr><td style="font-weight:900; color:#5DE4C7;">${y}</td><td class="item-name">${item.label}</td><td>${formatByType(d[item.key], item.type)}</td></tr>`;
+      });
+    });
+    html += '</tbody></table>';
+    container.innerHTML = html;
+  }
+
+  function renderAll() {
+    const y = selectedYear();
+    fillYearSelect();
+    document.getElementById("yearSelect").value = y === "all" || yearsList.includes(Number(y)) ? y : String(latestPopulatedYear() || "all");
+    updateStatus();
+    updateKpis(selectedYear());
+    updateInsights(selectedYear());
+    renderCharts(selectedYear());
+    buildTable();
+  }
+
+  function normalizeLabel(value) {
+    return String(value || "").trim().replace(/\s+/g, " ").toUpperCase();
+  }
+
+  function parseNumeric(value, type) {
+    if(value === null || value === undefined || value === "") return null;
+    if(typeof value === "number") return type === "percent" && Math.abs(value) > 1 ? value / 100 : value;
+    let str = String(value).trim();
+    if(!str) return null;
+    const isPercent = str.includes("%");
+    str = str.replace(/,/g, "").replace(/%/g, "").trim();
+    if(str.startsWith("(") && str.endsWith(")")) str = "-" + str.slice(1, -1);
+    const num = parseFloat(str);
+    if(isNaN(num)) return null;
+    if(type === "percent" || isPercent) return Math.abs(num) > 1 ? num / 100 : num;
+    return num;
+  }
+
+  function findMetricInRows(rows, metric) {
+    for(const row of rows) {
+      for(let c = 0; c < row.length; c++) {
+        const label = normalizeLabel(row[c]);
+        if(metric.aliases.some(alias => label === normalizeLabel(alias))) {
+          for(let n = c + 1; n < row.length; n++) {
+            const parsed = parseNumeric(row[n], metric.type);
+            if(parsed !== null) return parsed;
+          }
+          return null;
+        }
+      }
+    }
+    return null;
+  }
+
+  async function parseWorkbook(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = event => {
+        try {
+          const workbook = XLSX.read(new Uint8Array(event.target.result), { type: "array", raw: true, cellDates: false });
+          const sheetMatches = workbook.SheetNames.map(name => {
+            const clean = String(name).trim();
+            const exact = clean.match(/^(\d{4})$/);
+            const bwa = clean.match(/^BWA\s*(\d{4})$/i);
+            return { name, year: exact ? Number(exact[1]) : (bwa ? Number(bwa[1]) : null) };
+          }).filter(item => item.year).sort((a, b) => a.year - b.year);
+          const validYears = sheetMatches.map(item => item.year);
+          if(!validYears.length) throw new Error("No sheets named with a 4-digit year were found.");
+          const parsed = {};
+          sheetMatches.forEach(item => {
+            const year = item.year;
+            const sheet = workbook.Sheets[item.name];
+            const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "", raw: true });
+            const yearData = emptyYear();
+            metricRows.forEach(metric => {
+              yearData[metric.key] = findMetricInRows(rows, metric);
+            });
+            if(yearData.netProfitMargin === null && hasValue(yearData.netProfit) && hasValue(yearData.revenue) && Number(yearData.revenue) !== 0) yearData.netProfitMargin = Number(yearData.netProfit) / Number(yearData.revenue);
+            if(yearData.ebitdaMargin === null && hasValue(yearData.ebitda) && hasValue(yearData.revenue) && Number(yearData.revenue) !== 0) yearData.ebitdaMargin = Number(yearData.ebitda) / Number(yearData.revenue);
+            parsed[String(year)] = yearData;
+          });
+          resolve({ version: 1, savedAt: new Date().toISOString(), years: validYears, financial: parsed });
+        } catch(error) {
+          reject(error);
+        }
+      };
+      reader.onerror = reject;
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  function savePayload(payload) {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(payload));
+  }
+
+  function loadPayload() {
+    try {
+      const raw = localStorage.getItem(CACHE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch(error) {
+      return null;
+    }
+  }
+
+  function loadNotes() {
+    try {
+      document.getElementById("dashboardNotes").value = localStorage.getItem(NOTES_KEY) || "";
+    } catch(error) {}
+  }
+
+  function saveNotes() {
+    try {
+      localStorage.setItem(NOTES_KEY, document.getElementById("dashboardNotes").value);
+      document.getElementById("notesStatus").textContent = "Saved " + new Date().toLocaleTimeString();
+    } catch(error) {
+      document.getElementById("notesStatus").textContent = "Notes could not be saved";
+    }
+  }
+
+  function comparableValue(v) {
+    return hasValue(v) ? Number(v) : null;
+  }
+
+  function comparePayloads(oldPayload, newPayload) {
+    const changes = [];
+    const oldYears = normalizeYears(oldPayload?.years || []);
+    const newYears = normalizeYears(newPayload?.years || []);
+    newYears.forEach(year => {
+      const oldData = oldPayload?.financial?.[String(year)];
+      const newData = newPayload.financial[String(year)] || {};
+      if(!oldYears.includes(year)) {
+        changes.push(`New year sheet detected: ${year}.`);
+        return;
+      }
+      metricRows.forEach(metric => {
+        const oldVal = comparableValue(oldData?.[metric.key]);
+        const newVal = comparableValue(newData[metric.key]);
+        if(oldVal === null && newVal === null) return;
+        if(oldVal === null || newVal === null || Math.abs(oldVal - newVal) > 0.000001) {
+          changes.push(`${year} ${metric.label}: ${formatByType(oldVal, metric.type)} changed to ${formatByType(newVal, metric.type)}.`);
+        }
+      });
+    });
+    oldYears.forEach(year => {
+      if(!newYears.includes(year)) changes.push(`${year} exists in the dashboard but was not present in the uploaded workbook.`);
+    });
+    return changes;
+  }
+
+  function applyPayload(payload) {
+    currentPayload = payload;
+    financialData = payload.financial || {};
+    yearsList = normalizeYears(payload.years || Object.keys(financialData));
+    renderAll();
+  }
+
+  async function handleUpload(file) {
+    try {
+      const parsedPayload = await parseWorkbook(file);
+      const changes = comparePayloads(currentPayload, parsedPayload);
+      savePayload(parsedPayload);
+      applyPayload(parsedPayload);
+      document.getElementById("updateScope").textContent = `${file.name} uploaded`;
+      if(changes.length) {
+        const visibleChanges = changes.slice(0, 40).map(change => `<li>${change}</li>`).join("");
+        const remainder = changes.length > 40 ? `<p>${changes.length - 40} additional changes were detected and applied.</p>` : "";
+        document.getElementById("updateLog").innerHTML = `<p><strong>${changes.length} update${changes.length === 1 ? "" : "s"} detected and applied.</strong></p><ul class="update-list">${visibleChanges}</ul>${remainder}`;
+      } else {
+        document.getElementById("updateLog").innerHTML = "<p><strong>No figure changes detected.</strong> The uploaded workbook matches the current dashboard figures for the detected year sheets.</p>";
+      }
+    } catch(error) {
+      alert("Error parsing workbook: " + (error.message || error));
+      console.error(error);
+    }
+  }
+
+  function downloadChart(canvasId, filename) {
+    const canvas = document.getElementById(canvasId);
+    if(!canvas) return;
+    const link = document.createElement("a");
+    link.download = filename + ".png";
+    link.href = canvas.toDataURL();
+    link.click();
+  }
+
+  function exportCsv() {
+    const rows = [["Year", "Financial Item", "Telesol"]];
+    getTableYears().forEach(year => {
+      const d = financialData[String(year)] || {};
+      metricRows.forEach(metric => rows.push([year, metric.label, hasValue(d[metric.key]) ? d[metric.key] : ""]));
+    });
+    const csv = rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "bwa_telesol_financial_data.csv";
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }
+
+  setChartDefaults();
+  document.getElementById("uploadWorkbookBtn").addEventListener("click", () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".xls,.xlsx";
+    input.onchange = event => {
+      const file = event.target.files && event.target.files[0];
+      if(file) handleUpload(file);
+    };
+    input.click();
+  });
+  document.getElementById("yearSelect").addEventListener("change", renderAll);
+  document.getElementById("tableYearFilter").addEventListener("change", buildTable);
+  document.getElementById("dashboardNotes").addEventListener("input", saveNotes);
+  document.getElementById("clearNotesBtn").addEventListener("click", () => {
+    document.getElementById("dashboardNotes").value = "";
+    saveNotes();
+  });
+  document.getElementById("downloadPerformanceBtn").onclick = () => downloadChart("performanceChart", "bwa_telesol_performance");
+  document.getElementById("downloadMarginBtn").onclick = () => downloadChart("marginChart", "bwa_telesol_margins");
+  document.getElementById("downloadSpendBtn").onclick = () => downloadChart("spendChart", "bwa_telesol_spend");
+  document.getElementById("downloadBalanceBtn").onclick = () => downloadChart("balanceChart", "bwa_telesol_balance_sheet");
+  document.getElementById("downloadEvBtn").onclick = () => downloadChart("enterpriseChart", "bwa_telesol_enterprise_value");
+  document.getElementById("downloadTableBtn").onclick = exportCsv;
+  loadNotes();
+  renderAll();
+</script>
+</body>
+</html>
