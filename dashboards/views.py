@@ -18,6 +18,29 @@ def dashboard_detail(request, slug):
 
 
 @login_required
+def dashboard_fees_api(request, slug):
+    category = get_object_or_404(DashboardCategory, slug=slug, is_active=True)
+    from .models import RegulatoryFeeValue
+    fees = (
+        RegulatoryFeeValue.objects.filter(category=category)
+        .select_related("company", "period")
+        .order_by("period__year", "company__name")
+    )
+    payload = [
+        {
+            "year": f.period.year,
+            "company": f.company.name,
+            "company_slug": f.company.slug,
+            "invoice_issued": str(f.invoice_issued),
+            "payment_received": str(f.payment_received),
+            "outstanding": str(f.outstanding),
+        }
+        for f in fees
+    ]
+    return JsonResponse({"category": category.slug, "results": payload})
+
+
+@login_required
 def dashboard_metrics_api(request, slug):
     category = get_object_or_404(DashboardCategory, slug=slug, is_active=True)
     values = (

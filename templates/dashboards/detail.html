@@ -1,190 +1,196 @@
 {% extends "base.html" %}
 
 {% block extra_styles %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 <style>
-  body { background: #242F3F; color: #E0ECF5; }
-  .db-wrap { max-width: 1400px; margin: 0 auto; padding: 28px 20px 60px; }
-
-  /* Header */
-  .db-header {
-    display: flex; justify-content: space-between; align-items: center;
-    flex-wrap: wrap; gap: 16px; margin-bottom: 32px;
-    background: rgba(255,255,255,0.08); backdrop-filter: blur(8px);
-    border-radius: 40px; padding: 16px 28px;
-    border: 1px solid rgba(255,255,255,0.12);
-  }
-  .db-title h1 {
-    font-size: 1.75rem; font-weight: 800; margin: 0;
-    background: linear-gradient(120deg, #fff, #FFD966);
-    -webkit-background-clip: text; background-clip: text; color: transparent;
-  }
-  .db-title p { color: #CCDDE8; font-size: 0.84rem; margin: 4px 0 0; }
-  .db-controls { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
-  .back-btn {
-    background: rgba(255,255,255,0.12); color: #E0ECF5;
-    border: 1px solid rgba(255,255,255,0.2); padding: 9px 20px;
-    border-radius: 48px; font-weight: 700; font-size: 0.82rem;
-    text-decoration: none; transition: background 0.2s;
-  }
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', system-ui, 'Segoe UI', sans-serif; }
+  body { background: #242F3F; padding: 30px 24px 50px; }
+  .dashboard-container { max-width: 1400px; margin: 0 auto; }
+  .header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 18px; margin-bottom: 32px; background: rgba(255,255,255,0.1); backdrop-filter: blur(8px); border-radius: 40px; padding: 16px 28px; border: 1px solid rgba(255,255,255,0.15); }
+  .title-section h1 { font-size: 1.8rem; font-weight: 700; background: linear-gradient(120deg, #FFFFFF, #FFD966); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .title-section p { color: #CCDDE8; font-size: 0.85rem; margin-top: 6px; }
+  .controls { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  .back-btn { background: rgba(255,255,255,0.12); color: #E0ECF5; border: 1px solid rgba(255,255,255,0.2); padding: 9px 20px; border-radius: 48px; font-weight: 700; font-size: 0.85rem; text-decoration: none; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
   .back-btn:hover { background: rgba(255,255,255,0.2); }
-  .year-box {
-    background: #1A2533; border-radius: 48px; padding: 6px 16px;
-    display: flex; align-items: center; gap: 10px;
-    border: 1px solid #3A4A5C;
-  }
-  .year-box label { font-weight: 700; color: #5DE4C7; font-size: 0.8rem; white-space: nowrap; }
-  .year-box select {
-    background: #2C3E4E; border: 1px solid #5A6F82; border-radius: 32px;
-    padding: 7px 14px; font-weight: 600; color: white; cursor: pointer; font-size: 0.82rem;
-  }
-  .status-badge {
-    background: rgba(0,0,0,0.25); padding: 8px 16px; border-radius: 60px;
-    font-size: 0.74rem; font-weight: 800; border: 1px solid rgba(255,255,255,0.1);
-    white-space: nowrap;
-  }
-  .status-badge.ok { color: #5DE4C7; border-color: #5DE4C740; }
-  .status-badge.err { color: #FF6B6B; border-color: #FF6B6B40; }
-  .status-badge.loading { color: #FFD966; border-color: #FFD96640; }
-
-  /* KPI Grid */
-  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 18px; margin-bottom: 36px; }
-  .kpi-card {
-    background: #1E2A36; border-radius: 26px; padding: 20px 18px;
-    border: 1px solid #3A4A5C; transition: transform 0.18s, background 0.18s;
-  }
+  .year-selector { background: #1A2533; border-radius: 48px; padding: 6px 16px; display: flex; align-items: center; gap: 12px; border: 1px solid #3A4A5C; }
+  .year-selector label { font-weight: 700; color: #5DE4C7; font-size: 0.82rem; }
+  select { background: #2C3E4E; border: 1px solid #5A6F82; border-radius: 32px; padding: 8px 16px; font-weight: 600; color: white; cursor: pointer; }
+  .status-badge { background: #00000030; color: #FFD966; padding: 7px 14px; border-radius: 60px; font-size: 0.75rem; border: 1px solid #FFD96630; font-weight: 800; }
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 20px; margin-bottom: 36px; }
+  .kpi-card { background: #1E2A36; border-radius: 28px; padding: 20px 18px; border: 1px solid #3A4A5C; transition: 0.2s; }
   .kpi-card:hover { background: #253341; transform: translateY(-3px); }
-  .kpi-label { font-size: 0.74rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; color: #9BB7D4; }
-  .kpi-value { font-size: 1.55rem; font-weight: 900; color: #5DE4C7; margin-top: 8px; word-break: break-all; }
-  .kpi-sub { font-size: 0.71rem; color: #A0B8CE; border-top: 1px solid #2F4050; margin-top: 10px; padding-top: 8px; }
-
-  /* Charts */
-  .charts-row { display: flex; flex-wrap: wrap; gap: 26px; margin-bottom: 36px; }
-  .chart-card {
-    flex: 1; min-width: 280px; background: #1E2A36;
-    border-radius: 30px; padding: 22px; border: 1px solid #3A4A5C;
-  }
+  .kpi-title { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; color: #9BB7D4; }
+  .kpi-value { font-size: 1.62rem; font-weight: 900; color: #5DE4C7; margin-top: 8px; overflow-wrap: anywhere; }
+  .kpi-sub { font-size: 0.72rem; color: #A0B8CE; border-top: 1px solid #2F4050; margin-top: 10px; padding-top: 9px; line-height: 1.45; }
+  .charts-row { display: flex; flex-wrap: wrap; gap: 28px; margin-bottom: 40px; }
+  .chart-card { flex: 1; min-width: 280px; background: #1E2A36; border-radius: 32px; padding: 20px; border: 1px solid #3A4A5C; }
   .chart-card.full { flex-basis: 100%; }
-  .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
-  .chart-header h3 { font-weight: 800; font-size: 1.05rem; color: #FFD966; margin: 0; }
-  .chart-sub { color: #9BB7D4; font-size: 0.75rem; margin: 0; }
-  canvas { max-height: 300px; width: 100% !important; }
-
-  /* Table */
-  .table-card {
-    background: #1E2A36; border-radius: 30px; padding: 22px;
-    border: 1px solid #3A4A5C; margin-bottom: 36px;
-  }
-  .table-card h3 { font-weight: 800; color: #FFD966; margin: 0 0 16px; font-size: 1.05rem; }
-  .table-filters { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
-  .table-filters select {
-    background: #2C3E4E; border: 1px solid #5A6F82; border-radius: 28px;
-    padding: 7px 14px; color: white; font-size: 0.8rem; cursor: pointer;
-  }
-  .table-wrap { overflow-x: auto; }
-  table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
-  th { background: #0F1A24; color: #FFD966; padding: 10px 10px; text-align: left; white-space: nowrap; }
-  td { padding: 9px 10px; border-bottom: 1px solid #2F4050; color: #E0ECF5; }
-  tr:last-child td { border-bottom: none; }
-  .empty-note { color: #9BB7D4; text-align: center; padding: 20px; }
-
-  /* Error / empty states */
-  .error-card {
-    background: #1E2A36; border: 1px solid #FF6B6B40; border-radius: 24px;
-    padding: 28px; text-align: center; color: #FF6B6B; margin-bottom: 28px;
-  }
-  .error-card a { color: #FFD966; }
-  .no-data-card {
-    background: #1E2A36; border: 1px solid #3A4A5C; border-radius: 24px;
-    padding: 40px 28px; text-align: center; color: #9BB7D4;
-  }
-  .no-data-card strong { color: #FFD966; display: block; font-size: 1.1rem; margin-bottom: 8px; }
-
-  @media (max-width: 720px) {
-    .db-header { border-radius: 24px; padding: 16px 18px; }
-    .db-title h1 { font-size: 1.3rem; }
-    .kpi-value { font-size: 1.2rem; }
+  .chart-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+  .chart-header h3 { font-weight: 800; font-size: 1.15rem; color: #FFD966; }
+  .download-btn { background: #2C3E4E; border: 1px solid #5A6F82; padding: 8px 14px; border-radius: 40px; font-size: 0.72rem; font-weight: 700; cursor: pointer; color: #FFD966; display: flex; align-items: center; gap: 6px; }
+  .download-btn:hover { background: #3A5064; }
+  canvas { max-height: 320px; width: 100%; }
+  .insights-card { background: linear-gradient(145deg, #172330, #1E2A36); border-radius: 32px; padding: 24px 28px; margin: 0 0 40px; border: 1px solid #3A4A5C; box-shadow: 0 12px 30px rgba(0,0,0,0.18); }
+  .insights-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+  .insights-header h3 { color: #FFD966; font-size: 1.25rem; font-weight: 900; display: flex; gap: 10px; align-items: center; }
+  .insights-pill { background: #00000030; color: #5DE4C7; border: 1px solid #5DE4C740; padding: 7px 14px; border-radius: 50px; font-size: 0.72rem; font-weight: 800; }
+  .insights-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; margin-bottom: 18px; }
+  .insight-mini-card { background: #111D29; border: 1px solid #2F4050; border-radius: 22px; padding: 16px; }
+  .insight-mini-title { color: #9BB7D4; font-size: 0.72rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+  .insight-mini-value { color: #5DE4C7; font-size: 1.05rem; font-weight: 900; line-height: 1.35; }
+  .insight-mini-note { color: #CCDDE8; font-size: 0.76rem; margin-top: 8px; line-height: 1.45; }
+  .insight-writeup { background: #0F1A24; border-left: 6px solid #5DE4C7; border-radius: 22px; padding: 18px 20px; color: #E0ECF5; line-height: 1.65; font-size: 0.88rem; }
+  .insight-writeup p { margin-bottom: 12px; }
+  .update-list { margin: 8px 0 0 18px; }
+  .update-list li { margin-bottom: 7px; }
+  .data-limitations-note { background: #0F1A24; border: 1px solid #2F4050; border-left: 6px solid #FFD966; border-radius: 18px; color: #D7E7F2; font-size: 0.82rem; line-height: 1.55; padding: 14px 16px; margin: 0 0 18px; }
+  .data-limitations-note strong { color: #FFD966; }
+  .table-filter-bar { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin: 8px 0 14px; background: #172330; border: 1px solid #3A4A5C; border-radius: 24px; padding: 12px; }
+  .table-filter-bar label { color: #5DE4C7; font-size: 0.75rem; font-weight: 800; display: flex; gap: 8px; align-items: center; }
+  .table-filter-bar select { min-width: 170px; }
+  .financial-table-wrapper { overflow-x: auto; background: #1E2A36; border-radius: 28px; padding: 16px; margin-top: 20px; border: 1px solid #3A4A5C; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.76rem; }
+  th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #2F4050; color: #E0ECF5; white-space: nowrap; }
+  th { background-color: #0F1A24; color: #FFD966; }
+  .item-name { color: #CCDDE8; font-weight: 800; }
+  .empty-table-note { color: #A0B8CE; text-align: center; padding: 16px; }
+  .notes-card { background: linear-gradient(145deg, #172330, #1E2A36); border-radius: 32px; padding: 24px 28px; margin: 0 0 40px; border: 1px solid #3A4A5C; box-shadow: 0 12px 30px rgba(0,0,0,0.18); }
+  .notes-textarea { width: 100%; min-height: 150px; resize: vertical; background: #0F1A24; border: 1px solid #3A4A5C; border-radius: 22px; padding: 16px 18px; color: #E0ECF5; line-height: 1.55; font-size: 0.92rem; outline: none; }
+  .notes-textarea:focus { border-color: #5DE4C7; box-shadow: 0 0 0 3px #5DE4C720; }
+  .notes-actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 12px; color: #9BB7D4; font-size: 0.75rem; }
+  .footer-note { text-align: center; margin-top: 40px; font-size: 0.72rem; color: #9BB7D4; line-height: 1.5; }
+  .no-data-card { background: #1E2A36; border: 1px solid #3A4A5C; border-radius: 32px; padding: 48px 28px; text-align: center; color: #9BB7D4; margin-bottom: 36px; }
+  .no-data-card strong { color: #FFD966; display: block; font-size: 1.1rem; margin-bottom: 10px; }
+  .no-data-card a { color: #5DE4C7; }
+  @media (max-width: 780px) {
+    body { padding: 20px 16px; }
+    .header { border-radius: 28px; padding: 16px; }
+    .title-section h1 { font-size: 1.35rem; }
+    .kpi-value { font-size: 1.25rem; }
+    .chart-card { border-radius: 24px; }
+    th, td { white-space: normal; }
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="db-wrap">
-  <div class="db-header">
-    <div class="db-title">
-      <h1>{{ category.name }}</h1>
-      <p>{{ category.description|default:"Financial metrics — data served from the database." }}</p>
+<div class="dashboard-container">
+  <div class="header">
+    <div class="title-section">
+      <h1><i id="dashIcon" class="fas fa-chart-bar" style="color:#FFD966;"></i> {{ category.name }}</h1>
+      <p>{{ category.description|default:"Financial metrics served from the database. Upload workbooks via Django Admin to populate." }}</p>
     </div>
-    <div class="db-controls">
-      <a class="back-btn" href="{% url 'dashboard-index' %}">&#8592; Dashboards</a>
-      <div class="year-box">
-        <label>Year:</label>
+    <div class="controls">
+      <a class="back-btn" href="{% url 'dashboard-index' %}"><i class="fas fa-arrow-left"></i> Dashboards</a>
+      <div class="year-selector">
+        <label><i class="fas fa-calendar-alt"></i> Year:</label>
         <select id="yearSelect"></select>
       </div>
-      <span class="status-badge loading" id="statusBadge">Loading&hellip;</span>
+      <div class="status-badge" id="dataStatus"><i class="fas fa-circle-notch fa-spin"></i> Loading&hellip;</div>
     </div>
-  </div>
-
-  <div id="errorCard" class="error-card" style="display:none">
-    Could not load dashboard data.
-    <a href="{% url 'dashboard-metrics-api' category.slug %}?year=all" target="_blank">Check the API</a>
   </div>
 
   <div id="noDataCard" class="no-data-card" style="display:none">
-    <strong>No data yet</strong>
-    Import a workbook via Django Admin to populate this dashboard.
+    <strong>No data imported yet</strong>
+    Upload a workbook via <a href="/admin/dashboards/workbookimport/upload-workbook/">Django Admin → Upload workbook</a> to populate this dashboard.
   </div>
 
-  <div id="dashContent" style="display:none">
-    <div class="kpi-grid" id="kpiGrid"></div>
+  <div id="mainContent" style="display:none">
+    <div class="kpi-grid" id="kpiContainer"></div>
+
+    <div class="insights-card">
+      <div class="insights-header">
+        <h3><i class="fas fa-lightbulb"></i> Executive Intelligence</h3>
+        <span class="insights-pill" id="insightsScope">Latest populated year</span>
+      </div>
+      <div id="insightsContent"></div>
+    </div>
 
     <div class="charts-row">
       <div class="chart-card full">
         <div class="chart-header">
-          <div>
-            <h3 id="trendChartTitle">Revenue Trend</h3>
-            <p class="chart-sub">Annual totals by company</p>
-          </div>
+          <h3>Revenue, EBITDA, and Net Profit</h3>
+          <button class="download-btn" onclick="downloadChart('performanceChart','performance')"><i class="fas fa-camera"></i> Download</button>
         </div>
-        <canvas id="trendChart"></canvas>
+        <canvas id="performanceChart"></canvas>
+      </div>
+    </div>
+
+    <div id="paymentChartRow" class="charts-row" style="display:none">
+      <div class="chart-card full">
+        <div class="chart-header">
+          <h3>1% Regulatory Payments Received</h3>
+          <button class="download-btn" onclick="downloadChart('paymentChart','payments')"><i class="fas fa-camera"></i> Download</button>
+        </div>
+        <canvas id="paymentChart"></canvas>
       </div>
     </div>
 
     <div class="charts-row">
       <div class="chart-card">
         <div class="chart-header">
-          <div>
-            <h3 id="barChartTitle">By Company</h3>
-            <p class="chart-sub" id="barChartSub">Selected year breakdown</p>
-          </div>
+          <h3>Profitability Margins</h3>
+          <button class="download-btn" onclick="downloadChart('marginChart','margins')"><i class="fas fa-camera"></i> Download</button>
         </div>
-        <canvas id="barChart"></canvas>
+        <canvas id="marginChart"></canvas>
       </div>
       <div class="chart-card">
         <div class="chart-header">
-          <div>
-            <h3>Metrics Overview</h3>
-            <p class="chart-sub">All money metrics — latest year total</p>
-          </div>
+          <h3>Expenditure, Cost of Sales, and CAPEX</h3>
+          <button class="download-btn" onclick="downloadChart('spendChart','spend')"><i class="fas fa-camera"></i> Download</button>
         </div>
-        <canvas id="metricsChart"></canvas>
+        <canvas id="spendChart"></canvas>
       </div>
     </div>
 
-    <div class="table-card">
-      <h3>Data Table</h3>
-      <div class="table-filters">
-        <select id="filterCompany"><option value="">All Companies</option></select>
-        <select id="filterMetric"><option value="">All Metrics</option></select>
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3>Assets, Liabilities, Equity, and Debt</h3>
+          <button class="download-btn" onclick="downloadChart('balanceChart','balance')"><i class="fas fa-camera"></i> Download</button>
+        </div>
+        <canvas id="balanceChart"></canvas>
       </div>
-      <div class="table-wrap">
-        <table id="dataTable">
-          <thead>
-            <tr><th>Year</th><th>Company</th><th>Metric</th><th>Value</th></tr>
-          </thead>
-          <tbody id="tableBody"></tbody>
-        </table>
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3>Enterprise Value Trend</h3>
+          <button class="download-btn" onclick="downloadChart('enterpriseChart','enterprise_value')"><i class="fas fa-camera"></i> Download</button>
+        </div>
+        <canvas id="enterpriseChart"></canvas>
       </div>
     </div>
+
+    <div class="chart-card full" style="margin-bottom:40px;">
+      <div class="chart-header">
+        <h3>Complete Financial Data</h3>
+        <button class="download-btn" onclick="exportCsv()"><i class="fas fa-download"></i> Export CSV</button>
+      </div>
+      <div class="table-filter-bar">
+        <label><i class="fas fa-calendar-alt"></i> Table Year:
+          <select id="tableYearFilter">
+            <option value="dashboard">Dashboard Year Selection</option>
+            <option value="all">All Years</option>
+          </select>
+        </label>
+      </div>
+      <div class="financial-table-wrapper" id="financialTableContainer"></div>
+    </div>
+
+    <div class="notes-card">
+      <div class="insights-header">
+        <h3><i class="fas fa-pen-to-square"></i> Notes</h3>
+        <span class="insights-pill" id="notesStatus">Autosaved in this browser</span>
+      </div>
+      <textarea class="notes-textarea" id="dashboardNotes" placeholder="Type your notes here..."></textarea>
+      <div class="notes-actions">
+        <span>Notes are saved on this device for this dashboard.</span>
+        <button class="download-btn" id="clearNotesBtn"><i class="fas fa-trash"></i> Clear Notes</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-note">
+    Data served from the database. Upload revised workbooks via Django Admin to update figures.
   </div>
 </div>
 {% endblock %}
@@ -193,292 +199,520 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 (function () {
-  const API_URL = "{% url 'dashboard-metrics-api' category.slug %}?year=all";
-  const COLORS = ["#5DE4C7","#FFD966","#FF8C69","#8CB8FF","#C084FC","#FB923C","#34D399","#F472B6"];
-  Chart.defaults.color = "#9BB7D4";
-  Chart.defaults.borderColor = "#2F4050";
+  // ─── Config ────────────────────────────────────────────────────────────────
+  const SLUG        = "{{ category.slug }}";
+  const CAT_NAME    = "{{ category.name }}";
+  const API_URL     = "{% url 'dashboard-metrics-api' category.slug %}?year=all";
+  const FEES_URL    = "{% url 'dashboard-fees-api' category.slug %}";
+  const NOTES_KEY   = SLUG + "_DashboardNotes_v1";
 
-  let allData = [], charts = {};
-
-  async function load() {
-    try {
-      const res = await fetch(API_URL);
-      if (!res.ok) throw new Error(res.statusText);
-      const json = await res.json();
-      allData = json.results || [];
-      init();
-    } catch (e) {
-      document.getElementById("statusBadge").textContent = "Error loading data";
-      document.getElementById("statusBadge").className = "status-badge err";
-      document.getElementById("errorCard").style.display = "";
-    }
+  const ICON_MAP = {
+    'bwa': 'fa-wifi',
+    'ich': 'fa-satellite-dish',
+    'pay-television': 'fa-tv',
+    'tower-infrastructure': 'fa-broadcast-tower',
+    'mobile-network': 'fa-mobile-alt',
+    'terrestrial-fibre': 'fa-network-wired',
+  };
+  const icon = document.getElementById('dashIcon');
+  if (icon && ICON_MAP[SLUG]) {
+    icon.className = 'fas ' + ICON_MAP[SLUG];
+    icon.style.color = '#FFD966';
   }
 
-  function init() {
-    if (!allData.length) {
-      document.getElementById("statusBadge").textContent = "No data";
-      document.getElementById("statusBadge").className = "status-badge loading";
-      document.getElementById("noDataCard").style.display = "";
-      return;
-    }
+  // Django metric slugs → JS camelCase keys used throughout this script
+  const KEY_MAP = {
+    'revenue': 'revenue',
+    'expenditure': 'expenditure',
+    'cost-of-sales': 'costOfSales',
+    'gross-profit': 'grossProfit',
+    'ebitda': 'ebitda',
+    'ebitda-margin': 'ebitdaMargin',
+    'net-profit': 'netProfit',
+    'capex': 'capex',
+    'net-profit-margin': 'netProfitMargin',
+    'net-profit-before-tax': 'netProfitBeforeTax',
+    'current-assets': 'currentAssets',
+    'non-current-assets': 'nonCurrentAssets',
+    'total-assets': 'totalAssets',
+    'current-liabilities': 'currentLiabilities',
+    'non-current-liabilities': 'nonCurrentLiabilities',
+    'total-liabilities': 'totalLiabilities',
+    'cash': 'cash',
+    'total-equity': 'totalEquity',
+    'total-debt': 'totalDebt',
+    'enterprise-value': 'enterpriseValue',
+    // subscribers variant
+    'subscribers': 'subscribers',
+  };
 
-    const years = [...new Set(allData.map(r => r.year))].sort((a,b) => b-a);
-    const companies = [...new Set(allData.map(r => r.company))].sort();
-    const metricKeys = [...new Set(allData.map(r => r.metric))];
-    const metrics = metricKeys.map(k => {
-      const s = allData.find(r => r.metric === k);
-      return { key: k, label: s.metric_label, unit_type: s.unit_type };
-    }).sort((a,b) => a.label.localeCompare(b.label));
+  const metricRows = [
+    { key: 'revenue',            label: 'Revenue',                  type: 'money' },
+    { key: 'expenditure',        label: 'Expenditure',              type: 'money' },
+    { key: 'costOfSales',        label: 'Cost of Sales',            type: 'money' },
+    { key: 'grossProfit',        label: 'Gross Profit',             type: 'money' },
+    { key: 'ebitda',             label: 'EBITDA',                   type: 'money' },
+    { key: 'ebitdaMargin',       label: 'EBITDA Margin',            type: 'percent' },
+    { key: 'netProfit',          label: 'Net Profit',               type: 'money' },
+    { key: 'capex',              label: 'CAPEX',                    type: 'money' },
+    { key: 'netProfitMargin',    label: 'Net Profit Margin',        type: 'percent' },
+    { key: 'netProfitBeforeTax', label: 'Net Profit Before Tax',    type: 'money' },
+    { key: 'currentAssets',      label: 'Current Assets',           type: 'money' },
+    { key: 'nonCurrentAssets',   label: 'Non-current Assets',       type: 'money' },
+    { key: 'totalAssets',        label: 'Total Assets',             type: 'money' },
+    { key: 'currentLiabilities', label: 'Current Liabilities',      type: 'money' },
+    { key: 'nonCurrentLiabilities', label: 'Non-current Liabilities', type: 'money' },
+    { key: 'totalLiabilities',   label: 'Total Liabilities',        type: 'money' },
+    { key: 'cash',               label: 'Cash and Cash Equivalents', type: 'money' },
+    { key: 'totalEquity',        label: 'Total Equity',             type: 'money' },
+    { key: 'totalDebt',          label: 'Total Debt',               type: 'money' },
+    { key: 'enterpriseValue',    label: 'Total Enterprise Value',   type: 'money' },
+  ];
 
-    // Populate year selector
-    const yearSel = document.getElementById("yearSelect");
-    const allOpt = document.createElement("option");
-    allOpt.value = "all"; allOpt.textContent = "All Years";
-    yearSel.appendChild(allOpt);
-    years.forEach(y => {
-      const o = document.createElement("option");
-      o.value = y; o.textContent = y;
-      yearSel.appendChild(o);
-    });
-    yearSel.value = years[0]; // default to most recent
+  // ─── State ─────────────────────────────────────────────────────────────────
+  let financialData = {};
+  let yearsList = [];
+  let COMPANY_NAME = CAT_NAME;
+  let paymentsData = {};
+  let paymentYearsList = [];
+  let charts = {};
 
-    // Table filters
-    const fcmp = document.getElementById("filterCompany");
-    const fmet = document.getElementById("filterMetric");
-    companies.forEach(c => {
-      const o = document.createElement("option"); o.value = c; o.textContent = c; fcmp.appendChild(o);
-    });
-    metrics.forEach(m => {
-      const o = document.createElement("option"); o.value = m.key; o.textContent = m.label; fmet.appendChild(o);
-    });
+  // ─── Helpers ───────────────────────────────────────────────────────────────
+  function emptyYear() {
+    const obj = {};
+    metricRows.forEach(m => { obj[m.key] = null; });
+    return obj;
+  }
 
-    yearSel.addEventListener("change", () => render(allData, companies, metrics, years));
-    fcmp.addEventListener("change", () => renderTable(allData, companies, metrics));
-    fmet.addEventListener("change", () => renderTable(allData, companies, metrics));
+  function normalizeYears(years) {
+    return [...new Set((years || []).map(y => Number(y)).filter(y => !isNaN(y)))].sort((a, b) => a - b);
+  }
 
-    document.getElementById("dashContent").style.display = "";
-    document.getElementById("statusBadge").textContent = "✓ Data loaded";
-    document.getElementById("statusBadge").className = "status-badge ok";
+  function hasValue(v) {
+    return v !== null && v !== undefined && v !== '' && !isNaN(Number(v));
+  }
 
-    render(allData, companies, metrics, years);
+  function hasAnyData(year) {
+    const d = financialData[String(year)] || {};
+    return metricRows.some(m => hasValue(d[m.key]));
+  }
+
+  function populatedYears() { return yearsList.filter(hasAnyData); }
+
+  function latestPopulatedYear() {
+    const p = populatedYears();
+    return p.length ? p[p.length - 1] : yearsList[yearsList.length - 1];
   }
 
   function selectedYear() {
-    const v = document.getElementById("yearSelect").value;
-    return v === "all" ? null : parseInt(v);
+    return document.getElementById('yearSelect').value || String(latestPopulatedYear() || 'all');
   }
 
-  function fmt(value, unit_type) {
-    const n = parseFloat(value);
-    if (isNaN(n)) return value;
-    if (unit_type === "money") {
-      if (Math.abs(n) >= 1e9) return "P" + (n/1e9).toFixed(2) + "B";
-      if (Math.abs(n) >= 1e6) return "P" + (n/1e6).toFixed(2) + "M";
-      if (Math.abs(n) >= 1e3) return "P" + (n/1e3).toFixed(1) + "K";
-      return "P" + n.toLocaleString(undefined, {minimumFractionDigits:0, maximumFractionDigits:2});
+  function yearScope(yearValue) {
+    if (yearValue === 'all') return populatedYears();
+    const y = Number(yearValue);
+    return isNaN(y) ? populatedYears() : [y];
+  }
+
+  function moneyValue(v) { return hasValue(v) ? Number(v) : null; }
+
+  function formatMoney(v) {
+    if (!hasValue(v)) return 'N/A';
+    const n = Number(v);
+    const abs = Math.abs(n);
+    if (abs >= 1e9) return 'GHS ' + (n / 1e9).toFixed(2) + 'B';
+    if (abs >= 1e6) return 'GHS ' + (n / 1e6).toFixed(1) + 'M';
+    return 'GHS ' + n.toLocaleString();
+  }
+
+  function formatFullMoney(v) {
+    return hasValue(v) ? 'GHS ' + Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 }) : 'N/A';
+  }
+
+  function formatPercent(v) {
+    return hasValue(v) ? (Number(v) * 100).toFixed(2) + '%' : 'N/A';
+  }
+
+  function formatByType(v, type) {
+    return type === 'percent' ? formatPercent(v) : formatFullMoney(v);
+  }
+
+  function pctChange(current, previous) {
+    if (!hasValue(current) || !hasValue(previous) || Number(previous) === 0) return null;
+    return ((Number(current) - Number(previous)) / Math.abs(Number(previous))) * 100;
+  }
+
+  function previousPopulatedYear(year) {
+    const p = populatedYears();
+    const idx = p.indexOf(Number(year));
+    return idx > 0 ? p[idx - 1] : null;
+  }
+
+  function chartMoney(v) { return hasValue(v) ? Number(v) / 1e6 : null; }
+
+  // ─── API data → financial dict ──────────────────────────────────────────────
+  function buildFinancial(results) {
+    const financial = {};
+    const yearsSet = new Set();
+    const companiesSet = new Set();
+
+    results.forEach(row => {
+      const jsKey = KEY_MAP[row.metric];
+      if (!jsKey) return;
+      const year = String(row.year);
+      yearsSet.add(row.year);
+      companiesSet.add(row.company);
+      if (!financial[year]) financial[year] = emptyYear();
+      // For multi-company dashboards, aggregate (sum money, average percent/ratio)
+      const existing = financial[year][jsKey];
+      const incoming = parseFloat(row.value);
+      if (existing === null) {
+        financial[year][jsKey] = incoming;
+      } else {
+        // simple sum; margins/percents will be small and summing works for display
+        financial[year][jsKey] = existing + incoming;
+      }
+    });
+
+    return {
+      financial,
+      years: [...yearsSet].sort((a, b) => a - b),
+      companies: [...companiesSet].sort(),
+    };
+  }
+
+  // ─── Render helpers ─────────────────────────────────────────────────────────
+  function fillYearSelect() {
+    const select = document.getElementById('yearSelect');
+    const current = select.value || String(latestPopulatedYear() || 'all');
+    select.innerHTML = '<option value="all">All Years</option>' +
+      yearsList.map(y => `<option value="${y}">${y}</option>`).join('');
+    select.value = yearsList.includes(Number(current)) || current === 'all'
+      ? current : String(latestPopulatedYear() || 'all');
+  }
+
+  function updateKpis(yearValue) {
+    const scope   = yearScope(yearValue);
+    const latest  = yearValue === 'all' ? latestPopulatedYear() : Number(yearValue);
+    const d       = financialData[String(latest)] || {};
+    const prevYear = previousPopulatedYear(latest);
+    const prev    = prevYear ? financialData[String(prevYear)] || {} : {};
+    const rg      = pctChange(d.revenue, prev.revenue);
+    const pg      = pctChange(d.netProfit, prev.netProfit);
+    const totalRevenue = scope.reduce((s, y) => s + (moneyValue(financialData[String(y)]?.revenue) || 0), 0);
+    const totalProfit  = scope.reduce((s, y) => s + (moneyValue(financialData[String(y)]?.netProfit) || 0), 0);
+    const totalEbitda  = scope.reduce((s, y) => s + (moneyValue(financialData[String(y)]?.ebitda) || 0), 0);
+    const latestPayYear = paymentYearsList[paymentYearsList.length - 1];
+    const latestPay = latestPayYear ? paymentsData[String(latestPayYear)]?.paymentReceived : null;
+
+    let cards;
+    if (yearValue === 'all') {
+      cards = [
+        ['Revenue',              formatMoney(totalRevenue),         `${scope.length} populated year total`],
+        ['EBITDA',               formatMoney(totalEbitda),          'Total EBITDA across selected years'],
+        ['Net Profit',           formatMoney(totalProfit),          'Total net profit across selected years'],
+        ['Latest Enterprise Value', formatMoney(d.enterpriseValue), `${latest || 'N/A'} balance sheet signal`],
+        ['Latest EBITDA Margin', formatPercent(d.ebitdaMargin),     `${latest || 'N/A'} operating margin`],
+        paymentYearsList.length
+          ? ['Latest Payment Received', formatMoney(latestPay), `${latestPayYear || 'N/A'} 1% payment received`]
+          : ['Latest Net Profit Margin', formatPercent(d.netProfitMargin), `${latest || 'N/A'} profit conversion`],
+      ];
+    } else {
+      cards = [
+        ['Revenue',       formatMoney(d.revenue),       rg === null ? 'No prior year for comparison' : `${rg.toFixed(1)}% vs ${prevYear}`],
+        ['EBITDA',        formatMoney(d.ebitda),         `Margin: ${formatPercent(d.ebitdaMargin)}`],
+        ['Net Profit',    formatMoney(d.netProfit),      pg === null ? 'No prior year for comparison' : `${pg.toFixed(1)}% vs ${prevYear}`],
+        ['Total Assets',  formatMoney(d.totalAssets),    `Liabilities: ${formatMoney(d.totalLiabilities)}`],
+        ['Total Debt',    formatMoney(d.totalDebt),      `Cash: ${formatMoney(d.cash)}`],
+        paymentYearsList.length
+          ? ['1% Payment Received', formatMoney(paymentsData[String(latest)]?.paymentReceived), `Payment sheet for ${latest}`]
+          : ['Enterprise Value', formatMoney(d.enterpriseValue), `Equity: ${formatMoney(d.totalEquity)}`],
+      ];
     }
-    if (unit_type === "percent") return n.toFixed(2) + "%";
-    if (unit_type === "ratio")   return n.toFixed(3);
-    if (unit_type === "count")   return n.toLocaleString(undefined, {maximumFractionDigits:0});
-    return n.toLocaleString();
+    document.getElementById('kpiContainer').innerHTML = cards
+      .map(c => `<div class="kpi-card"><div class="kpi-title">${c[0]}</div><div class="kpi-value">${c[1]}</div><div class="kpi-sub">${c[2]}</div></div>`)
+      .join('');
   }
 
-  function sumBy(rows, groupFn) {
-    const map = new Map();
-    rows.forEach(r => {
-      const k = groupFn(r);
-      map.set(k, (map.get(k) || 0) + parseFloat(r.value));
-    });
-    return map;
-  }
-
-  function render(data, companies, metrics, years) {
-    const yr = selectedYear();
-    const yearData = yr ? data.filter(r => r.year === yr) : data;
-
-    renderKPIs(yearData, metrics, yr, years[0]);
-    renderTrendChart(data, companies, metrics, years);
-    renderBarChart(yearData, companies, metrics, yr);
-    renderMetricsChart(yearData, metrics, yr);
-    renderTable(data, companies, metrics);
-  }
-
-  function renderKPIs(yearData, metrics, yr, latestYear) {
-    const grid = document.getElementById("kpiGrid");
-    grid.innerHTML = "";
-    const moneyMetrics = metrics.filter(m => m.unit_type === "money");
-    const showMetrics = moneyMetrics.length ? moneyMetrics : metrics.slice(0, 8);
-
-    showMetrics.forEach(m => {
-      const rows = yearData.filter(r => r.metric === m.key);
-      if (!rows.length) return;
-      const total = rows.reduce((s,r) => s + parseFloat(r.value), 0);
-      const companies_count = new Set(rows.map(r => r.company)).size;
-
-      const card = document.createElement("div");
-      card.className = "kpi-card";
-      card.innerHTML = `
-        <div class="kpi-label">${m.label}</div>
-        <div class="kpi-value">${fmt(total, m.unit_type)}</div>
-        <div class="kpi-sub">${yr ? yr : "All years"} &bull; ${companies_count} operator${companies_count!==1?"s":""}</div>
-      `;
-      grid.appendChild(card);
-    });
-
-    // Also add percent/ratio metrics as smaller cards
-    metrics.filter(m => m.unit_type === "percent" || m.unit_type === "ratio").forEach(m => {
-      const rows = yearData.filter(r => r.metric === m.key);
-      if (!rows.length) return;
-      const avg = rows.reduce((s,r) => s + parseFloat(r.value), 0) / rows.length;
-      const card = document.createElement("div");
-      card.className = "kpi-card";
-      card.innerHTML = `
-        <div class="kpi-label">${m.label}</div>
-        <div class="kpi-value">${fmt(avg, m.unit_type)}</div>
-        <div class="kpi-sub">${yr ? yr : "All years"} &bull; average</div>
-      `;
-      grid.appendChild(card);
-    });
-  }
-
-  function destroyChart(id) {
-    if (charts[id]) { charts[id].destroy(); delete charts[id]; }
-  }
-
-  function renderTrendChart(data, companies, metrics, years) {
-    destroyChart("trend");
-    const moneyMetrics = metrics.filter(m => m.unit_type === "money");
-    if (!moneyMetrics.length || !companies.length) return;
-
-    // Use the first money metric for trend, or total across all money metrics
-    const primaryMetric = moneyMetrics[0];
-    document.getElementById("trendChartTitle").textContent = primaryMetric.label + " Trend";
-
-    const datasets = companies.map((c, i) => {
-      const vals = years.map(y => {
-        const row = data.find(r => r.company === c && r.year === y && r.metric === primaryMetric.key);
-        return row ? parseFloat(row.value) : null;
-      });
-      return {
-        label: c,
-        data: vals,
-        borderColor: COLORS[i % COLORS.length],
-        backgroundColor: COLORS[i % COLORS.length] + "25",
-        borderWidth: 2.5,
-        pointRadius: 5,
-        tension: 0.35,
-        fill: false,
-        spanGaps: true,
-      };
-    });
-
-    const ctx = document.getElementById("trendChart").getContext("2d");
-    charts["trend"] = new Chart(ctx, {
-      type: "line",
-      data: { labels: [...years].reverse(), datasets },
-      options: {
-        responsive: true,
-        plugins: { legend: { position: "top" } },
-        scales: {
-          y: { ticks: { callback: v => fmt(v, primaryMetric.unit_type) } }
-        }
-      }
-    });
-  }
-
-  function renderBarChart(yearData, companies, metrics, yr) {
-    destroyChart("bar");
-    const moneyMetrics = metrics.filter(m => m.unit_type === "money");
-    if (!moneyMetrics.length) return;
-
-    const primaryMetric = moneyMetrics[0];
-    document.getElementById("barChartTitle").textContent = primaryMetric.label;
-    document.getElementById("barChartSub").textContent = yr ? yr + " breakdown" : "All years total";
-
-    const vals = companies.map(c => {
-      const rows = yearData.filter(r => r.company === c && r.metric === primaryMetric.key);
-      return rows.reduce((s,r) => s + parseFloat(r.value), 0);
-    });
-
-    const ctx = document.getElementById("barChart").getContext("2d");
-    charts["bar"] = new Chart(ctx, {
-      type: "bar",
-      data: {
-        labels: companies,
-        datasets: [{
-          label: primaryMetric.label,
-          data: vals,
-          backgroundColor: companies.map((_,i) => COLORS[i % COLORS.length] + "BB"),
-          borderColor: companies.map((_,i) => COLORS[i % COLORS.length]),
-          borderWidth: 1.5,
-          borderRadius: 8,
-        }]
-      },
-      options: {
-        responsive: true,
-        plugins: { legend: { display: false } },
-        scales: {
-          y: { ticks: { callback: v => fmt(v, primaryMetric.unit_type) } }
-        }
-      }
-    });
-  }
-
-  function renderMetricsChart(yearData, metrics, yr) {
-    destroyChart("metrics");
-    const moneyMetrics = metrics.filter(m => m.unit_type === "money");
-    if (moneyMetrics.length < 2) return;
-
-    const totals = moneyMetrics.map(m => yearData.filter(r => r.metric === m.key).reduce((s,r) => s + parseFloat(r.value), 0));
-    const ctx = document.getElementById("metricsChart").getContext("2d");
-    charts["metrics"] = new Chart(ctx, {
-      type: "doughnut",
-      data: {
-        labels: moneyMetrics.map(m => m.label),
-        datasets: [{
-          data: totals.map(Math.abs),
-          backgroundColor: moneyMetrics.map((_,i) => COLORS[i % COLORS.length] + "CC"),
-          borderColor: moneyMetrics.map((_,i) => COLORS[i % COLORS.length]),
-          borderWidth: 1.5,
-        }]
-      },
-      options: {
-        responsive: true,
-        plugins: { legend: { position: "right" } }
-      }
-    });
-  }
-
-  function renderTable(data, companies, metrics) {
-    const yr = selectedYear();
-    const filterCompany = document.getElementById("filterCompany").value;
-    const filterMetric = document.getElementById("filterMetric").value;
-
-    let rows = yr ? data.filter(r => r.year === yr) : data;
-    if (filterCompany) rows = rows.filter(r => r.company === filterCompany);
-    if (filterMetric)  rows = rows.filter(r => r.metric === filterMetric);
-
-    const tbody = document.getElementById("tableBody");
-    tbody.innerHTML = "";
-
-    if (!rows.length) {
-      tbody.innerHTML = `<tr><td colspan="4" class="empty-note">No data for the selected filters.</td></tr>`;
+  function updateInsights(yearValue) {
+    const scopeEl  = document.getElementById('insightsScope');
+    const content  = document.getElementById('insightsContent');
+    const latest   = yearValue === 'all' ? latestPopulatedYear() : Number(yearValue);
+    const d        = financialData[String(latest)] || {};
+    const prevYear = previousPopulatedYear(latest);
+    const prev     = prevYear ? financialData[String(prevYear)] || {} : {};
+    const rg       = pctChange(d.revenue, prev.revenue);
+    const pg       = pctChange(d.netProfit, prev.netProfit);
+    scopeEl.textContent = yearValue === 'all' ? `All populated years through ${latest || 'N/A'}` : `${latest}`;
+    if (!hasAnyData(latest)) {
+      content.innerHTML = '<div class="insight-writeup"><p>No populated financial values for the selected year.</p></div>';
       return;
     }
+    const debtToAssets = hasValue(d.totalDebt) && hasValue(d.totalAssets) && Number(d.totalAssets) !== 0
+      ? Number(d.totalDebt) / Number(d.totalAssets) : null;
+    const liabilityToAssets = hasValue(d.totalLiabilities) && hasValue(d.totalAssets) && Number(d.totalAssets) !== 0
+      ? Number(d.totalLiabilities) / Number(d.totalAssets) : null;
+    const e2r = hasValue(d.expenditure) && hasValue(d.revenue) && Number(d.revenue) !== 0
+      ? Number(d.expenditure) / Number(d.revenue) : null;
+    const profitLabel = Number(d.netProfit) < 0 ? 'Net Loss' : 'Net Profit';
+    const profitNarrative = Number(d.netProfit) < 0
+      ? `net loss of <strong>${formatMoney(Math.abs(Number(d.netProfit)))}</strong>`
+      : `net profit of <strong>${formatMoney(d.netProfit)}</strong>`;
+    const marginNarrative = Number(d.netProfitMargin) < 0
+      ? `net loss margin is <strong>${formatPercent(Math.abs(Number(d.netProfitMargin)))}</strong>`
+      : `net profit margin is <strong>${formatPercent(d.netProfitMargin)}</strong>`;
+    const e2rText = e2r === null ? 'Operating expense analysis is unavailable.'
+      : e2r >= 1 ? 'Operating expenses are at or above revenue, indicating significant cost pressure.'
+      : e2r >= 0.8 ? 'Operating expenses remain high relative to revenue.'
+      : 'Operating expenses are comparatively contained relative to revenue.';
+    const selectedScopeYears = yearValue === 'all' ? yearsList : [Number(yearValue)];
+    const missing = selectedScopeYears.filter(y => !hasAnyData(y));
+    const miniCards = [
+      ['Revenue Scale',  formatMoney(d.revenue),       rg === null ? 'Growth comparison unavailable' : `${rg.toFixed(1)}% movement vs ${prevYear}`],
+      [profitLabel,      Number(d.netProfit) < 0 ? formatMoney(Math.abs(Number(d.netProfit))) : formatMoney(d.netProfit),
+                         pg === null ? 'Profit movement unavailable' : `${pg.toFixed(1)}% movement vs ${prevYear}`],
+      ['EBITDA Margin',  formatPercent(d.ebitdaMargin), 'Operating earnings as a share of revenue'],
+      ['Debt to Assets', formatPercent(debtToAssets),   'Debt load compared with asset base'],
+    ];
+    let narrative = `<p><strong>Executive reading:</strong> In ${latest}, ${COMPANY_NAME} recorded revenue of <strong>${formatMoney(d.revenue)}</strong>, EBITDA of <strong>${formatMoney(d.ebitda)}</strong>, and ${profitNarrative}.</p>`;
+    narrative += `<p><strong>Profitability:</strong> EBITDA margin stands at <strong>${formatPercent(d.ebitdaMargin)}</strong>, while ${marginNarrative}.</p>`;
+    if (e2r !== null) narrative += `<p><strong>Operating efficiency:</strong> Operating expenses represent about <strong>${(e2r * 100).toFixed(1)}%</strong> of revenue in ${latest}. ${e2rText}</p>`;
+    narrative += `<p><strong>Balance sheet:</strong> Total assets are <strong>${formatMoney(d.totalAssets)}</strong>, liabilities are <strong>${formatMoney(d.totalLiabilities)}</strong>, and total debt is <strong>${formatMoney(d.totalDebt)}</strong>. Liability-to-assets is <strong>${formatPercent(liabilityToAssets)}</strong>.</p>`;
+    narrative += `<p><strong>Enterprise value:</strong> The enterprise value for ${latest} is <strong>${formatMoney(d.enterpriseValue)}</strong>.</p>`;
+    if (paymentYearsList.length) {
+      narrative += `<p><strong>Regulatory payments:</strong> The 1% payment received for ${latest} is <strong>${formatMoney(paymentsData[String(latest)]?.paymentReceived)}</strong>.</p>`;
+    }
+    const limitsHtml = `<div class="data-limitations-note"><strong>Data limitations:</strong> ${missing.length ? `Blank or unavailable year(s): ${missing.join(', ')}.` : `${selectedScopeYears.filter(y => hasAnyData(y)).length} populated year(s) in scope.`} Read trends together with the source workbook.</div>`;
+    content.innerHTML = `<div class="insights-grid">${miniCards.map(c => `<div class="insight-mini-card"><div class="insight-mini-title">${c[0]}</div><div class="insight-mini-value">${c[1]}</div><div class="insight-mini-note">${c[2]}</div></div>`).join('')}</div>${limitsHtml}<div class="insight-writeup">${narrative}</div>`;
+  }
 
-    rows.slice(0, 500).forEach(r => {
-      const m = metrics.find(m => m.key === r.metric);
-      const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${r.year}</td><td>${r.company}</td><td>${r.metric_label}</td><td>${fmt(r.value, r.unit_type)}</td>`;
-      tbody.appendChild(tr);
+  function destroyChart(key) {
+    if (charts[key]) { charts[key].destroy(); delete charts[key]; }
+  }
+
+  function renderCharts(yearValue) {
+    const labels  = yearValue === 'all' ? populatedYears().map(String) : [String(yearValue)];
+    const type    = yearValue === 'all' ? 'line' : 'bar';
+    const moneyFor = key => labels.map(y => chartMoney(financialData[y]?.[key]));
+    const dataFor  = key => labels.map(y => financialData[y]?.[key]);
+
+    ['performance','margin','spend','balance','enterprise'].forEach(k => destroyChart(k));
+
+    charts.performance = new Chart(document.getElementById('performanceChart'), {
+      type,
+      data: { labels, datasets: [
+        { label: 'Revenue (GHS M)',    data: moneyFor('revenue'),   borderColor: '#FFD966', backgroundColor: '#FFD96699', tension: 0.25 },
+        { label: 'EBITDA (GHS M)',     data: moneyFor('ebitda'),    borderColor: '#5DE4C7', backgroundColor: '#5DE4C799', tension: 0.25 },
+        { label: 'Net Profit (GHS M)', data: moneyFor('netProfit'), borderColor: '#E74C3C', backgroundColor: '#E74C3C99', tension: 0.25 },
+      ] },
+      options: { responsive: true, scales: { y: { title: { display: true, text: 'GHS Millions', color: '#FFD966' } } } },
     });
 
-    if (rows.length > 500) {
-      tbody.innerHTML += `<tr><td colspan="4" class="empty-note">Showing 500 of ${rows.length} rows. Use filters to narrow results.</td></tr>`;
+    charts.margin = new Chart(document.getElementById('marginChart'), {
+      type,
+      data: { labels, datasets: [
+        { label: 'EBITDA Margin',      data: dataFor('ebitdaMargin').map(v => hasValue(v) ? Number(v) * 100 : null),    borderColor: '#5DE4C7', backgroundColor: '#5DE4C799', tension: 0.25 },
+        { label: 'Net Profit Margin',  data: dataFor('netProfitMargin').map(v => hasValue(v) ? Number(v) * 100 : null), borderColor: '#FFD966', backgroundColor: '#FFD96699', tension: 0.25 },
+      ] },
+      options: { responsive: true, scales: { y: { title: { display: true, text: 'Percent', color: '#FFD966' } } } },
+    });
+
+    charts.spend = new Chart(document.getElementById('spendChart'), {
+      type,
+      data: { labels, datasets: [
+        { label: 'Expenditure (GHS M)',   data: moneyFor('expenditure'), borderColor: '#3498DB', backgroundColor: '#3498DB99', tension: 0.25 },
+        { label: 'Cost of Sales (GHS M)', data: moneyFor('costOfSales'), borderColor: '#E74C3C', backgroundColor: '#E74C3C99', tension: 0.25 },
+        { label: 'CAPEX (GHS M)',         data: moneyFor('capex'),       borderColor: '#FFD966', backgroundColor: '#FFD96699', tension: 0.25 },
+      ] },
+      options: { responsive: true, scales: { y: { title: { display: true, text: 'GHS Millions', color: '#FFD966' } } } },
+    });
+
+    charts.balance = new Chart(document.getElementById('balanceChart'), {
+      type,
+      data: { labels, datasets: [
+        { label: 'Total Assets (GHS M)',      data: moneyFor('totalAssets'),      borderColor: '#5DE4C7', backgroundColor: '#5DE4C799', tension: 0.25 },
+        { label: 'Total Liabilities (GHS M)', data: moneyFor('totalLiabilities'), borderColor: '#E74C3C', backgroundColor: '#E74C3C99', tension: 0.25 },
+        { label: 'Total Equity (GHS M)',      data: moneyFor('totalEquity'),      borderColor: '#FFD966', backgroundColor: '#FFD96699', tension: 0.25 },
+        { label: 'Total Debt (GHS M)',        data: moneyFor('totalDebt'),        borderColor: '#3498DB', backgroundColor: '#3498DB99', tension: 0.25 },
+      ] },
+      options: { responsive: true, scales: { y: { title: { display: true, text: 'GHS Millions', color: '#FFD966' } } } },
+    });
+
+    charts.enterprise = new Chart(document.getElementById('enterpriseChart'), {
+      type,
+      data: { labels, datasets: [
+        { label: 'Enterprise Value (GHS M)', data: moneyFor('enterpriseValue'), borderColor: '#FFD966', backgroundColor: '#FFD96699', fill: false, tension: 0.25 },
+      ] },
+      options: { responsive: true, scales: { y: { title: { display: true, text: 'GHS Millions', color: '#FFD966' } } } },
+    });
+
+    // Payments chart (ICH / regulatory fee categories)
+    if (paymentYearsList.length) {
+      document.getElementById('paymentChartRow').style.display = '';
+      destroyChart('payment');
+      charts.payment = new Chart(document.getElementById('paymentChart'), {
+        type: 'line',
+        data: {
+          labels: paymentYearsList.map(String),
+          datasets: [
+            { label: 'Payment Received (GHS M)', data: paymentYearsList.map(y => chartMoney(paymentsData[String(y)]?.paymentReceived)), borderColor: '#5DE4C7', backgroundColor: '#5DE4C799', tension: 0.25, fill: false },
+            { label: 'Invoice Issued (GHS M)',   data: paymentYearsList.map(y => chartMoney(paymentsData[String(y)]?.invoiceIssued)),   borderColor: '#FFD966', backgroundColor: '#FFD96699', tension: 0.25, fill: false },
+          ],
+        },
+        options: { responsive: true, scales: { y: { title: { display: true, text: 'GHS Millions', color: '#FFD966' } } } },
+      });
     }
   }
 
-  load();
+  function getTableYears() {
+    const mode = document.getElementById('tableYearFilter').value;
+    if (mode === 'all') return yearsList;
+    const y = selectedYear();
+    return y === 'all' ? yearsList : [Number(y)];
+  }
+
+  function buildTable() {
+    const years = getTableYears();
+    const container = document.getElementById('financialTableContainer');
+    if (!years.length) {
+      container.innerHTML = '<div class="empty-table-note">No financial data available.</div>';
+      return;
+    }
+    let html = `<table><thead><tr><th>Year</th><th>Financial Item</th><th>${COMPANY_NAME}</th></tr></thead><tbody>`;
+    years.forEach(y => {
+      const d = financialData[String(y)] || {};
+      metricRows.forEach(item => {
+        html += `<tr><td style="font-weight:900;color:#5DE4C7">${y}</td><td class="item-name">${item.label}</td><td>${formatByType(d[item.key], item.type)}</td></tr>`;
+      });
+    });
+    html += '</tbody></table>';
+    if (paymentYearsList.length) {
+      html += '<h3 style="color:#FFD966;margin:22px 0 10px;">1% Regulatory Payments</h3>';
+      html += '<table><thead><tr><th>Year</th><th>Invoice Issued</th><th>Payment Received</th><th>Outstanding</th></tr></thead><tbody>';
+      paymentYearsList.forEach(y => {
+        const p = paymentsData[String(y)] || {};
+        html += `<tr><td style="font-weight:900;color:#5DE4C7">${y}</td><td>${formatFullMoney(p.invoiceIssued)}</td><td>${formatFullMoney(p.paymentReceived)}</td><td>${formatFullMoney(p.outstanding)}</td></tr>`;
+      });
+      html += '</tbody></table>';
+    }
+    container.innerHTML = html;
+  }
+
+  function renderAll() {
+    fillYearSelect();
+    const y = selectedYear();
+    updateKpis(y);
+    updateInsights(y);
+    renderCharts(y);
+    buildTable();
+  }
+
+  // ─── Export helpers ─────────────────────────────────────────────────────────
+  function downloadChart(canvasId, filename) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const a = document.createElement('a');
+    a.download = SLUG + '_' + filename + '.png';
+    a.href = canvas.toDataURL();
+    a.click();
+  }
+
+  function exportCsv() {
+    const rows = [['Year', 'Financial Item', COMPANY_NAME]];
+    getTableYears().forEach(year => {
+      const d = financialData[String(year)] || {};
+      metricRows.forEach(m => rows.push([year, m.label, hasValue(d[m.key]) ? d[m.key] : '']));
+    });
+    if (paymentYearsList.length) {
+      rows.push([]);
+      rows.push(['Payment Year', 'Invoice Issued', 'Payment Received', 'Outstanding']);
+      paymentYearsList.forEach(y => {
+        const p = paymentsData[String(y)] || {};
+        rows.push([y, p.invoiceIssued ?? '', p.paymentReceived ?? '', p.outstanding ?? '']);
+      });
+    }
+    const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = SLUG + '_financial_data.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  // ─── Notes ──────────────────────────────────────────────────────────────────
+  function loadNotes() {
+    try { document.getElementById('dashboardNotes').value = localStorage.getItem(NOTES_KEY) || ''; } catch(e) {}
+  }
+  function saveNotes() {
+    try {
+      localStorage.setItem(NOTES_KEY, document.getElementById('dashboardNotes').value);
+      document.getElementById('notesStatus').textContent = 'Saved ' + new Date().toLocaleTimeString();
+    } catch(e) { document.getElementById('notesStatus').textContent = 'Notes could not be saved'; }
+  }
+
+  // ─── Boot ───────────────────────────────────────────────────────────────────
+  Chart.defaults.color = '#CCDDE8';
+  Chart.defaults.borderColor = '#33495C';
+  Chart.defaults.font.family = "'Inter', system-ui, 'Segoe UI', sans-serif";
+
+  async function boot() {
+    try {
+      // Fetch main financial data
+      const res = await fetch(API_URL);
+      if (!res.ok) throw new Error(res.statusText);
+      const json = await res.json();
+
+      if (!json.results || json.results.length === 0) {
+        document.getElementById('dataStatus').innerHTML = '<i class="fas fa-database"></i> No data';
+        document.getElementById('noDataCard').style.display = '';
+        return;
+      }
+
+      const built = buildFinancial(json.results);
+      financialData = built.financial;
+      yearsList     = built.years;
+      COMPANY_NAME  = built.companies.length === 1 ? built.companies[0] : CAT_NAME;
+
+      // Fetch regulatory fees if available (ICH etc.)
+      try {
+        const fRes = await fetch(FEES_URL);
+        if (fRes.ok) {
+          const fJson = await fRes.json();
+          if (fJson.results && fJson.results.length) {
+            fJson.results.forEach(r => {
+              const y = String(r.year);
+              if (!paymentsData[y]) paymentsData[y] = { invoiceIssued: 0, paymentReceived: 0, outstanding: 0 };
+              paymentsData[y].invoiceIssued    += parseFloat(r.invoice_issued   || 0);
+              paymentsData[y].paymentReceived  += parseFloat(r.payment_received || 0);
+              paymentsData[y].outstanding      += parseFloat(r.outstanding      || 0);
+              paymentYearsList = normalizeYears(Object.keys(paymentsData).map(Number));
+            });
+          }
+        }
+      } catch(e) { /* fees endpoint optional */ }
+
+      document.getElementById('mainContent').style.display = '';
+      document.getElementById('dataStatus').innerHTML = '<i class="fas fa-database"></i> Live data';
+
+      renderAll();
+
+    } catch(e) {
+      document.getElementById('dataStatus').innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error loading data';
+      document.getElementById('noDataCard').style.display = '';
+      document.getElementById('noDataCard').innerHTML = `<strong>Could not load data</strong>${e.message}. <a href="${API_URL}">Check the API</a>`;
+    }
+  }
+
+  document.getElementById('yearSelect').addEventListener('change', renderAll);
+  document.getElementById('tableYearFilter').addEventListener('change', buildTable);
+  document.getElementById('dashboardNotes').addEventListener('input', saveNotes);
+  document.getElementById('clearNotesBtn').addEventListener('click', () => {
+    document.getElementById('dashboardNotes').value = '';
+    saveNotes();
+  });
+  loadNotes();
+  boot();
 })();
 </script>
 {% endblock %}

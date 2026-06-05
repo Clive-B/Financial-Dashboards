@@ -18,7 +18,7 @@ COMPANIES = [
     ("at", "AT"),
     ("telesol", "Telesol"),
     ("dstv", "DSTV"),
-    ("ich", "ICH"),
+    ("afriwave", "AFRIWAVE"),
     ("spectrum-fibre", "Spectrum Fibre"),
     ("african-towers", "African Towers"),
 ]
@@ -72,12 +72,14 @@ class Command(BaseCommand):
                 defaults={"label": label, "unit_type": unit_type, "aliases": aliases},
             )
 
-        mobile_network = categories["mobile-network"]
-        for key, label, unit_type, aliases in BWA_METRICS:
-            MetricDefinition.objects.update_or_create(
-                category=mobile_network,
-                key=key,
-                defaults={"label": label, "unit_type": unit_type, "aliases": aliases},
-            )
+        # Seed the same financial metrics for all remaining categories
+        for cat_slug in ["mobile-network", "ich", "pay-television", "tower-infrastructure", "terrestrial-fibre"]:
+            cat = categories[cat_slug]
+            for key, label, unit_type, aliases in BWA_METRICS:
+                MetricDefinition.objects.update_or_create(
+                    category=cat,
+                    key=key,
+                    defaults={"label": label, "unit_type": unit_type, "aliases": aliases},
+                )
 
         self.stdout.write(self.style.SUCCESS("Reference data seeded."))
