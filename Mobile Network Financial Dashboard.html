@@ -1,0 +1,1869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Mobile Network Financial Dashboard | Upload Excel</title>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <!-- SheetJS (XLSX) -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+  <!-- html2canvas -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', system-ui, 'Segoe UI', sans-serif; }
+    body { background: #242F3F; padding: 30px 24px 50px; }
+    .dashboard-container { max-width: 1400px; margin: 0 auto; }
+    /* header */
+    .header {
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
+      margin-bottom: 32px; background: rgba(255,255,255,0.1); backdrop-filter: blur(8px);
+      border-radius: 40px; padding: 16px 28px; border: 1px solid rgba(255,255,255,0.15);
+    }
+    .title-section h1 {
+      font-size: 1.8rem; font-weight: 700;
+      background: linear-gradient(120deg, #FFFFFF, #FFD966); -webkit-background-clip: text;
+      background-clip: text; color: transparent;
+    }
+    .title-section p { color: #CCDDE8; font-size: 0.85rem; margin-top: 6px; }
+    .controls { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+    .upload-btn {
+      background: #FFD966; color: #242F3F; border: none; padding: 8px 20px;
+      border-radius: 48px; font-weight: 600; cursor: pointer; display: flex;
+      align-items: center; gap: 8px; transition: 0.2s;
+    }
+    .upload-btn:hover { background: #FFE08C; }
+    .year-selector {
+      background: #1A2533; border-radius: 48px; padding: 6px 16px;
+      display: flex; align-items: center; gap: 12px; border: 1px solid #3A4A5C;
+    }
+    .year-selector label { font-weight: 600; color: #5DE4C7; }
+    select {
+      background: #2C3E4E; border: 1px solid #5A6F82; border-radius: 32px;
+      padding: 8px 16px; font-weight: 500; color: white; cursor: pointer;
+    }
+    .ai-badge { background: #00000030; backdrop-filter: blur(4px); color: #FFD966; padding: 6px 14px; border-radius: 60px; font-size: 0.75rem; border: 1px solid #FFD96630; }
+    /* KPI grid, chart cards (same as before, dark theme) */
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 20px; margin-bottom: 36px; }
+    .kpi-card { background: #1E2A36; border-radius: 28px; padding: 20px 18px; border: 1px solid #3A4A5C; transition: 0.2s; }
+    .kpi-card:hover { background: #253341; transform: translateY(-3px); }
+    .kpi-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; color: #9BB7D4; }
+    .kpi-value { font-size: 1.8rem; font-weight: 800; color: #5DE4C7; }
+    .kpi-sub { font-size: 0.7rem; color: #A0B8CE; border-top: 1px solid #2F4050; margin-top: 8px; padding-top: 8px; }
+    .charts-row { display: flex; flex-wrap: wrap; gap: 28px; margin-bottom: 40px; }
+    .chart-card { flex: 1; min-width: 280px; background: #1E2A36; border-radius: 32px; padding: 20px; border: 1px solid #3A4A5C; }
+    .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+    .chart-header h3 { font-weight: 700; font-size: 1.2rem; color: #FFD966; }
+    .download-btn { background: #2C3E4E; border: 1px solid #5A6F82; padding: 8px 14px; border-radius: 40px; font-size: 0.7rem; font-weight: 600; cursor: pointer; color: #FFD966; display: flex; align-items: center; gap: 6px; }
+    .download-btn:hover { background: #3A5064; }
+    .profit-toggle { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 14px; }
+    .profit-metric-btn, .trend-metric-btn { background: #2C3E4E; border: 1px solid #5A6F82; padding: 8px 12px; border-radius: 40px; font-size: 0.68rem; font-weight: 700; cursor: pointer; color: #E0ECF5; }
+    .profit-metric-btn.active, .trend-metric-btn.active { background: #5DE4C7; color: #0F1A24; border-color: #5DE4C7; }
+    canvas { max-height: 320px; width: 100%; }
+    .ai-prediction-card { background: #1A2533; border-radius: 32px; padding: 24px 28px; margin: 15px 0 40px; border-left: 8px solid #FFD966; border: 1px solid #3A4A5C; }
+    .ai-title { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+    .ai-title i { font-size: 1.8rem; color: #FFD966; }
+    .ai-title span { font-weight: 800; font-size: 1.3rem; background: linear-gradient(135deg, #FFE0A3, #FFC857); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .prediction-flex { display: flex; gap: 30px; flex-wrap: wrap; align-items: flex-end; }
+    .prediction-control select, .prediction-control button { padding: 8px 20px; border-radius: 48px; background: #2C3E4E; border: 1px solid #5A6F82; color: white; font-weight: 500; }
+    .prediction-control button { background: #FFD966; color: #242F3F; border: none; cursor: pointer; font-weight: 700; }
+    .prediction-result { background: #00000030; backdrop-filter: blur(4px); padding: 12px 24px; border-radius: 40px; color: #FFD966; border: 1px solid #FFD96640; }
+
+    .insights-card { background: linear-gradient(145deg, #172330, #1E2A36); border-radius: 32px; padding: 24px 28px; margin: 0 0 40px; border: 1px solid #3A4A5C; box-shadow: 0 12px 30px rgba(0,0,0,0.18); }
+    .insights-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+    .insights-header h3 { color: #FFD966; font-size: 1.25rem; font-weight: 800; display: flex; gap: 10px; align-items: center; }
+    .insights-pill { background: #00000030; color: #5DE4C7; border: 1px solid #5DE4C740; padding: 7px 14px; border-radius: 50px; font-size: 0.72rem; font-weight: 700; }
+    .insights-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; margin-bottom: 18px; }
+    .insight-mini-card { background: #111D29; border: 1px solid #2F4050; border-radius: 22px; padding: 16px; }
+    .insight-mini-title { color: #9BB7D4; font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+    .insight-mini-value { color: #5DE4C7; font-size: 1.1rem; font-weight: 900; line-height: 1.35; }
+    .insight-mini-note { color: #CCDDE8; font-size: 0.76rem; margin-top: 8px; line-height: 1.45; }
+    .insight-writeup { background: #0F1A24; border-left: 6px solid #5DE4C7; border-radius: 22px; padding: 18px 20px; color: #E0ECF5; line-height: 1.65; font-size: 0.88rem; }
+    .insight-writeup p { margin-bottom: 12px; }
+    .insight-writeup ul { margin-left: 18px; }
+    .insight-writeup li { margin-bottom: 8px; }
+    .insight-empty { color: #A0B8CE; text-align: center; padding: 18px; background: #0F1A24; border-radius: 18px; }
+    .data-limitations-note { background: #0F1A24; border: 1px solid #2F4050; border-left: 6px solid #FFD966; border-radius: 18px; color: #D7E7F2; font-size: 0.82rem; line-height: 1.55; padding: 14px 16px; margin: 0 0 18px; }
+    .data-limitations-note strong { color: #FFD966; }
+
+    .table-filter-bar { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin: 8px 0 14px; background: #172330; border: 1px solid #3A4A5C; border-radius: 24px; padding: 12px; }
+    .table-filter-bar label { color: #5DE4C7; font-size: 0.75rem; font-weight: 700; display: flex; gap: 8px; align-items: center; }
+    .table-filter-bar select { min-width: 170px; }
+    .financial-table-wrapper { overflow-x: auto; background: #1E2A36; border-radius: 28px; padding: 16px; margin-top: 20px; border: 1px solid #3A4A5C; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+    th, td { padding: 10px 8px; text-align: left; border-bottom: 1px solid #2F4050; color: #E0ECF5; }
+    th { background-color: #0F1A24; color: #FFD966; }
+    .year-group-row td { background: #111D29; color: #5DE4C7; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; }
+    .item-name { color: #CCDDE8; font-weight: 700; }
+    .empty-table-note { color: #A0B8CE; text-align: center; padding: 16px; }
+    .footer-note { text-align: center; margin-top: 40px; font-size: 0.7rem; color: #9BB7D4; }
+
+    .regulatory-section { background: linear-gradient(145deg, #172330, #1E2A36); border-radius: 32px; padding: 24px; margin: 0 0 40px; border: 1px solid #3A4A5C; }
+    .regulatory-section h3 { color: #FFD966; font-size: 1.25rem; font-weight: 800; display: flex; gap: 10px; align-items: center; margin-bottom: 16px; }
+    .regulatory-status { color: #A0B8CE; background: #0F1A24; border-left: 6px solid #FFD966; padding: 12px 16px; border-radius: 18px; margin-bottom: 16px; line-height: 1.5; font-size: 0.84rem; }
+    .regulatory-table-wrapper { overflow-x: auto; background: #0F1A24; border-radius: 22px; padding: 14px; margin-top: 16px; border: 1px solid #2F4050; }
+    @media (max-width: 780px) { body { padding: 20px 16px; } .kpi-value { font-size: 1.3rem; } }
+  </style>
+</head>
+<body>
+<div class="dashboard-container">
+  <div class="header">
+    <div class="title-section">
+      <h1><i class="fas fa-chart-line" style="color:#FFD966;"></i> Mobile Network Financial Dashboard</h1>
+      <p>Upload Financial + Regulatory Fee workbooks (sheets named by year: 2017, 2018, ... 2026) | MTN(Yellow) · Telecel(Red) · AT(Blue)</p>
+    </div>
+    <div class="controls">
+      <button class="upload-btn" id="uploadExcelBtn"><i class="fas fa-file-excel"></i> Upload Financial Workbook</button>
+      <button class="upload-btn" id="uploadRegulatoryExcelBtn"><i class="fas fa-receipt"></i> Upload Regulatory Fee Workbook</button>
+      <div class="year-selector">
+        <label><i class="fas fa-calendar-alt"></i> Year:</label>
+        <select id="yearSelect"></select>
+      </div>
+      <div class="year-selector">
+        <label><i class="fas fa-network-wired"></i> Network:</label>
+        <select id="networkSelect">
+          <option value="Industry">Industry</option>
+          <option value="MTN">MTN</option>
+          <option value="Telecel">Telecel</option>
+          <option value="AT">AT</option>
+        </select>
+      </div>
+      <div class="ai-badge"><i class="fas fa-microchip"></i> AI Linear Forecast</div>
+    </div>
+  </div>
+
+  <div class="kpi-grid" id="kpiContainer"></div>
+
+  <div class="insights-card" id="insightsPanel">
+    <div class="insights-header">
+      <h3><i class="fas fa-lightbulb"></i> Insights & Executive Intelligence</h3>
+      <span class="insights-pill" id="insightsScope">Upload Excel to generate insights</span>
+    </div>
+    <div id="insightsContent"><div class="insight-empty">Upload or load financial data to generate automatic insights from the charts.</div></div>
+  </div>
+
+  <div class="charts-row"><div class="chart-card"><div class="chart-header"><h3>Revenue & EBITDA</h3><button class="download-btn" id="downloadChart1Btn"><i class="fas fa-camera"></i> Download</button></div><canvas id="mainChart"></canvas></div></div>
+  <div class="charts-row"><div class="chart-card"><div class="chart-header"><h3>📈 Growth Intelligence (YoY Revenue %)</h3><button class="download-btn" id="downloadYoYBtn"><i class="fas fa-camera"></i> Download</button></div><canvas id="yoyChart"></canvas></div>
+  <div class="chart-card"><div class="chart-header"><h3 id="profitabilityTitle">📊 Profitability Analysis - Net Profit</h3><button class="download-btn" id="downloadProfitBtn"><i class="fas fa-camera"></i> Download</button></div><div class="profit-toggle" id="profitMetricButtons"><button class="profit-metric-btn active" data-profit-metric="netProfit">Net Profit</button><button class="profit-metric-btn" data-profit-metric="netProfitMargin">Net Profit Margin</button><button class="profit-metric-btn" data-profit-metric="grossProfit">Gross Profit</button><button class="profit-metric-btn" data-profit-metric="grossProfitMargin">Gross Profit Margin</button><button class="profit-metric-btn" data-profit-metric="returnOnInvestment">Return on Investment</button></div><canvas id="profitAnalysisChart"></canvas></div></div>
+  <div class="charts-row"><div class="chart-card"><div class="chart-header"><h3>🏆 Company Benchmark</h3><button class="download-btn" id="downloadBenchBtn"><i class="fas fa-camera"></i> Download</button></div><canvas id="benchmarkChart"></canvas></div>
+  <div class="chart-card"><div class="chart-header"><h3>💰 Enterprise Value Trend</h3><button class="download-btn" id="downloadEVBtn"><i class="fas fa-camera"></i> Download</button></div><canvas id="evChart"></canvas></div></div>
+  <div class="charts-row"><div class="chart-card"><div class="chart-header"><h3>⚖️ Assets vs Liabilities</h3><button class="download-btn" id="downloadAssetsLiabBtn"><i class="fas fa-camera"></i> Download</button></div><canvas id="assetsLiabChart"></canvas></div>
+  <div class="chart-card"><div class="chart-header"><h3 id="trendTitle">📊 Financial Trend Analysis - Operating Efficiency</h3><button class="download-btn" id="downloadTrendBtn"><i class="fas fa-camera"></i> Download</button></div><div class="profit-toggle" id="trendMetricButtons"><button class="trend-metric-btn active" data-trend-metric="operatingEfficiency">Operating Efficiency</button><button class="trend-metric-btn" data-trend-metric="revenueTrend">Revenue Trend</button><button class="trend-metric-btn" data-trend-metric="netProfitTrend">Net Profit Trend</button><button class="trend-metric-btn" data-trend-metric="expenseTrend">Expenditure / Operating Expense Trend</button></div><canvas id="trendAnalysisChart"></canvas></div></div>
+
+  <div class="regulatory-section" id="marketSharePanel">
+    <h3><i class="fas fa-chart-pie"></i> Market Share Analytics</h3>
+    <div class="regulatory-status" id="marketShareStatus">Market share values are read from the financial workbook's MARKET SHARE section.</div>
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-header"><h3>Market Share Trend</h3><button class="download-btn" id="downloadMarketShareTrendBtn"><i class="fas fa-camera"></i> Download</button></div>
+        <canvas id="marketShareTrendChart"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header"><h3 id="marketShareDistributionTitle">Market Share Distribution</h3><button class="download-btn" id="downloadMarketShareDistributionBtn"><i class="fas fa-camera"></i> Download</button></div>
+        <canvas id="marketShareDistributionChart"></canvas>
+      </div>
+    </div>
+    <div class="table-filter-bar">
+      <label><i class="fas fa-chart-pie"></i> Market Share Metric:<select id="marketShareMetricFilter"><option value="revenue">Revenue Market Share</option><option value="profitability">Profitability Market Share</option><option value="enterprise">Enterprise Value Market Share</option></select></label>
+      <label><i class="fas fa-calendar-alt"></i> Table Year:<select id="marketShareTableYearFilter"><option value="dashboard">Dashboard Year Selection</option><option value="all">All Years</option></select></label>
+      <label><i class="fas fa-building"></i> Company:<select id="marketShareTableCompanyFilter"><option value="active">Dashboard Selection</option><option value="Industry">Industry</option><option value="MTN">MTN</option><option value="Telecel">Telecel</option><option value="AT">AT</option></select></label>
+    </div>
+    <div class="regulatory-table-wrapper" id="marketShareTableContainer"><div class="empty-table-note">No market share data loaded yet.</div></div>
+  </div>
+
+  <div class="regulatory-section" id="regulatoryPanel">
+    <h3><i class="fas fa-receipt"></i> 1% Regulatory Fee Analytics</h3>
+    <div class="regulatory-status" id="regulatoryStatus">Upload the regulatory fee workbook to activate regulatory fee analytics. The financial workbook can remain separate.</div>
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-header"><h3>Regulatory Fees Received</h3><button class="download-btn" id="downloadRegFeeBtn"><i class="fas fa-camera"></i> Download</button></div>
+        <canvas id="regulatoryFeeChart"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header"><h3>Regulatory Fee as % of Revenue</h3><button class="download-btn" id="downloadRegRateBtn"><i class="fas fa-camera"></i> Download</button></div>
+        <canvas id="regulatoryFeeRateChart"></canvas>
+      </div>
+    </div>
+    <div class="table-filter-bar" id="regulatoryTableFilterBar">
+      <label><i class="fas fa-calendar-alt"></i> Table Year:<select id="regulatoryTableYearFilter"><option value="dashboard">Dashboard Year Selection</option><option value="all">All Years</option></select></label>
+      <label><i class="fas fa-building"></i> Company:<select id="regulatoryTableCompanyFilter"><option value="active">Dashboard Selection</option><option value="Industry">Industry</option><option value="MTN">MTN</option><option value="Telecel">Telecel</option><option value="AT">AT</option></select></label>
+      <label><i class="fas fa-list"></i> Item:<select id="regulatoryTableItemFilter"><option value="all">All Items</option></select></label>
+    </div>
+    <div class="financial-table-wrapper" id="regulatoryTableContainer"><div class="empty-table-note">No regulatory fee workbook loaded yet.</div></div>
+  </div>
+
+  <div class="chart-card" style="width:100%;"><div class="chart-header"><h3>📋 Complete Financial Data</h3><button class="download-btn" id="downloadTableBtn"><i class="fas fa-download"></i> Export CSV</button></div><div class="table-filter-bar"><label><i class="fas fa-calendar-alt"></i> Table Year:<select id="tableYearFilter"><option value="dashboard">Dashboard Year Selection</option><option value="all">All Years</option></select></label><label><i class="fas fa-building"></i> Company:<select id="tableCompanyFilter"><option value="active">Dashboard Selection</option><option value="Industry">Industry</option><option value="MTN">MTN</option><option value="Telecel">Telecel</option><option value="AT">AT</option></select></label><label><i class="fas fa-list"></i> Item:<select id="tableItemFilter"><option value="all">All Items</option></select></label></div><div class="financial-table-wrapper" id="financialTableContainer"></div></div>
+
+  <div class="ai-prediction-card"><div class="ai-title"><i class="fas fa-robot"></i><span>AI Predictive Intelligence</span></div>
+    <div class="prediction-flex"><div class="prediction-control"><select id="predictMetric"><option value="revenue">Revenue (GHS)</option><option value="netProfit">Net Profit (GHS)</option><option value="ebitda">EBITDA (GHS)</option></select>
+    <select id="predictCompany"><option value="MTN">MTN</option><option value="Telecel">Telecel</option><option value="AT">AT</option></select>
+    <button id="runPredictionBtn"><i class="fas fa-brain"></i> Forecast 2026</button></div><div class="prediction-result" id="predictionOutput">🤖 Upload Excel → select metric & company → forecast</div></div></div>
+  <div class="footer-note"><i class="fas fa-database"></i> Uploaded Excel values are captured into a saved dashboard snapshot. Re-upload a revised workbook to apply changed values or new year sheets.</div>
+</div>
+
+<script>
+  // ---------- Global state ----------
+  let financialData = {};     // { year: { company: { revenue, ebitda, netProfit, grossProfit, grossProfitMargin, returnOnInvestment, margin, totalAssets, totalDebt, enterpriseValue, operatingExpense } } }
+  let cashData = {};          // { year: { company: cash } }
+  let liabilitiesData = {};   // { year: { company: totalLiabilities } }
+  let regulatoryData = {};   // { year: { company: { invoiceIssued, paymentReceived, outstanding, feeToRevenue } } }
+  let regulatoryYearsList = [];
+  let marketShareData = {};    // { revenue|profitability|enterprise: { year: { company: marketShareRatio } } }
+  let marketShareYearsList = [];
+  let yearsList = [];
+  let charts = {};
+  let activeProfitMetric = "netProfit";
+  let activeTrendMetric = "operatingEfficiency";
+  let activeMarketShareMetric = "revenue";
+
+  // Local hardcoded snapshot storage: values extracted from the uploaded Excel are persisted
+  // in the browser so the dashboard can reopen with the last uploaded dataset, then refresh
+  // automatically whenever a revised workbook or new year sheets are uploaded.
+  const DASHBOARD_CACHE_KEY = "telecomFinancialDashboardHardcodedSnapshot_v1";
+  const REGULATORY_CACHE_KEY = "telecomRegulatoryFeeDashboardSnapshot_v2";
+  const MARKET_SHARE_CACHE_KEY = "telecomMarketShareDashboardSnapshot_v1";
+
+  const companies = ["MTN", "Telecel", "AT"];
+  const companyColors = { MTN: "#F1C40F", Telecel: "#E74C3C", AT: "#3498DB" };
+  const DEFAULT_FINANCIAL_PAYLOAD = {"version":1,"savedAt":"embedded-from-uploaded-financial-workbook","financial":{"2017":{"MTN":{"revenue":3471007000.0,"ebitda":1199355000.0,"netProfit":479514000.0,"grossProfit":2113171000.0,"grossProfitMargin":0.6088063204712638,"returnOnInvestment":0.13814838172322902,"margin":0.13814838172322902,"totalAssets":4070025000.0,"totalDebt":438854000.0,"enterpriseValue":2390391000.0,"operatingExpense":913816000.0},"Telecel":{"revenue":1252137000.0,"ebitda":-668135000.0,"netProfit":842655000.0,"grossProfit":665478000.0,"grossProfitMargin":0.5314737924045052,"returnOnInvestment":0.672973484530846,"margin":0.672973484530846,"totalAssets":1363376000.0,"totalDebt":6083090000.0,"enterpriseValue":-443050000.0,"operatingExpense":1507892000.0},"AT":{"revenue":546972000.0,"ebitda":0,"netProfit":0,"grossProfit":208362000.0,"grossProfitMargin":0.38093723261885437,"returnOnInvestment":0.0,"margin":0.0,"totalAssets":1558978000.0,"totalDebt":566366000.0,"enterpriseValue":833650000.0,"operatingExpense":546972000.0}},"2018":{"MTN":{"revenue":3471007000.0,"ebitda":1199355000.0,"netProfit":479514000.0,"grossProfit":2113171000.0,"grossProfitMargin":0.6088063204712638,"returnOnInvestment":0.13814838172322902,"margin":0.13814838172322902,"totalAssets":4070025000.0,"totalDebt":438854000.0,"enterpriseValue":2390391000.0,"operatingExpense":913816000.0},"Telecel":{"revenue":1252137000.0,"ebitda":-668135000.0,"netProfit":842655000.0,"grossProfit":665478000.0,"grossProfitMargin":0.5314737924045052,"returnOnInvestment":0.672973484530846,"margin":0.672973484530846,"totalAssets":1363376000.0,"totalDebt":6083090000.0,"enterpriseValue":-443050000.0,"operatingExpense":1507892000.0},"AT":{"revenue":440319000.0,"ebitda":-298440000.0,"netProfit":-382525000.0,"grossProfit":98160000.0,"grossProfitMargin":0.2229292853590238,"returnOnInvestment":-0.8687451597591745,"margin":-0.8687451597591745,"totalAssets":1558978000.0,"totalDebt":566366000.0,"enterpriseValue":833650000.0,"operatingExpense":428420000.0}},"2019":{"MTN":{"revenue":4237407000.0,"ebitda":2182028000.0,"netProfit":1160169000.0,"grossProfit":3231855000.0,"grossProfitMargin":0.7626963848410124,"returnOnInvestment":0.2737922035811051,"margin":0.2737922035811051,"totalAssets":6401274000.0,"totalDebt":505423000.0,"enterpriseValue":2845752000.0,"operatingExpense":1049827000.0},"Telecel":{"revenue":1312512000.0,"ebitda":-1252389000.0,"netProfit":-1422034000.0,"grossProfit":674060000.0,"grossProfitMargin":0.5135648283596645,"returnOnInvestment":-1.0834445704115467,"margin":-1.0834445704115467,"totalAssets":1457222000.0,"totalDebt":1117844000.0,"enterpriseValue":21128000.0,"operatingExpense":2096094000.0},"AT":{"revenue":803171000.0,"ebitda":-219139000.0,"netProfit":413198000.0,"grossProfit":350177000.0,"grossProfitMargin":0.4359930824195595,"returnOnInvestment":0.5144583158505474,"margin":0.5144583158505474,"totalAssets":1531029000.0,"totalDebt":724770000.0,"enterpriseValue":-239638000.0,"operatingExpense":960455000.0}},"2020":{"MTN":{"revenue":4791381000.0,"ebitda":5770507000.0,"netProfit":1253153000.0,"grossProfit":3680973000.0,"grossProfitMargin":0.768248861862582,"returnOnInvestment":0.2615431751305104,"margin":0.2615431751305104,"totalAssets":7310200000.0,"totalDebt":837095000.0,"enterpriseValue":3392291000.0,"operatingExpense":1993940000.0},"Telecel":{"revenue":1306405000.0,"ebitda":613325000.0,"netProfit":-353198000.0,"grossProfit":741911000.0,"grossProfitMargin":0.5679027560366042,"returnOnInvestment":-0.2703587325523096,"margin":-0.2703587325523096,"totalAssets":2513163000.0,"totalDebt":1382509000.0,"enterpriseValue":-193516000.0,"operatingExpense":836107000.0},"AT":{"revenue":732850000.0,"ebitda":-400809000.0,"netProfit":-412610000.0,"grossProfit":277009000.0,"grossProfitMargin":0.3779886743535512,"returnOnInvestment":-0.5630210820768233,"margin":-0.5630210820768233,"totalAssets":1256269000.0,"totalDebt":741892000.0,"enterpriseValue":-614096000.0,"operatingExpense":511913000.0}},"2021":{"MTN":{"revenue":6111833000.0,"ebitda":3344416000.0,"netProfit":1780258000.0,"grossProfit":4756736000.0,"grossProfitMargin":0.778283045364623,"returnOnInvestment":0.29128053727907816,"margin":0.29128053727907816,"totalAssets":7979940000.0,"totalDebt":569090000.0,"enterpriseValue":3818090000.0,"operatingExpense":2445021000.0},"Telecel":{"revenue":1286921000.0,"ebitda":-149906000.0,"netProfit":-149906000.0,"grossProfit":765484000.0,"grossProfitMargin":0.5948181745421824,"returnOnInvestment":-0.11648422863563497,"margin":-0.11648422863563497,"totalAssets":2574177000.0,"totalDebt":1391766000.0,"enterpriseValue":-314652000.0,"operatingExpense":716957000.0},"AT":{"revenue":1520600000.0,"ebitda":505398000.0,"netProfit":446161000.0,"grossProfit":1123446000.0,"grossProfitMargin":0.7388175720110483,"returnOnInvestment":0.2934111534920426,"margin":0.2934111534920426,"totalAssets":1014070000.0,"totalDebt":463424000.0,"enterpriseValue":-430657000.0,"operatingExpense":535997000.0}},"2022":{"MTN":{"revenue":8142249000.0,"ebitda":4537140000.0,"netProfit":2686128000.0,"grossProfit":6592517000.0,"grossProfitMargin":0.8096678202791391,"returnOnInvestment":0.32990000674260883,"margin":0.32990000674260883,"totalAssets":9660546000.0,"totalDebt":387064000.0,"enterpriseValue":4278404000.0,"operatingExpense":3251060000.0},"Telecel":{"revenue":1405005000.0,"ebitda":0,"netProfit":-675856000.0,"grossProfit":860655000.0,"grossProfitMargin":0.6125636563570949,"returnOnInvestment":-0.48103458706552643,"margin":-0.48103458706552643,"totalAssets":2491164000.0,"totalDebt":1643285000.0,"enterpriseValue":-698115000.0,"operatingExpense":1096453000.0},"AT":{"revenue":700242000.0,"ebitda":-411174000.0,"netProfit":-398825000.0,"grossProfit":309438000.0,"grossProfitMargin":0.44190151404800054,"returnOnInvestment":-0.5695530973577706,"margin":-0.5695530973577706,"totalAssets":1038578000.0,"totalDebt":669993000.0,"enterpriseValue":-664800000.0,"operatingExpense":593063000.0}},"2023":{"MTN":{"revenue":10725403000.0,"ebitda":6235160000.0,"netProfit":3698605000.0,"grossProfit":8444993000.0,"grossProfitMargin":0.7873823482436977,"returnOnInvestment":0.3448453172342335,"margin":0.3448453172342335,"totalAssets":13091462000.0,"totalDebt":231638000.0,"enterpriseValue":5664553000.0,"operatingExpense":3863063000.0},"Telecel":{"revenue":1583777000.0,"ebitda":0,"netProfit":-1868483000.0,"grossProfit":953558000.0,"grossProfitMargin":0.6020784491756099,"returnOnInvestment":-1.1797639440401015,"margin":-1.1797639440401015,"totalAssets":2247747000.0,"totalDebt":1635858000.0,"enterpriseValue":-353147000.0,"operatingExpense":1308195000.0},"AT":{"revenue":630174000.0,"ebitda":68379000.0,"netProfit":-591960515.68,"grossProfit":588800654.26,"grossProfitMargin":0.9343461556014688,"returnOnInvestment":-0.9393604237559784,"margin":-0.9393604237559784,"totalAssets":1603189000.0,"totalDebt":771662000.0,"enterpriseValue":-1366263111.1,"operatingExpense":520422000.0}},"2024":{"MTN":{"revenue":13758565000.0,"ebitda":7627218000.0,"netProfit":4332154000.0,"grossProfit":10910680000.0,"grossProfitMargin":0.7930100268450961,"returnOnInvestment":0.3148696103118312,"margin":0.3148696103118312,"totalAssets":15400637000.0,"totalDebt":70443000.0,"enterpriseValue":6740904000.0,"operatingExpense":7497554000.0},"Telecel":{"revenue":1826841000.0,"ebitda":0,"netProfit":-841052000.0,"grossProfit":1023084000.0,"grossProfitMargin":0.560029033725431,"returnOnInvestment":-0.4603859887094717,"margin":-0.4603859887094717,"totalAssets":2919224000.0,"totalDebt":1905395000.0,"enterpriseValue":-980922000.0,"operatingExpense":1826841000.0},"AT":{"revenue":0,"ebitda":0,"netProfit":0,"grossProfit":0,"grossProfitMargin":0,"returnOnInvestment":0,"margin":0,"totalAssets":0,"totalDebt":0,"enterpriseValue":0.0,"operatingExpense":0}},"2025":{"MTN":{"revenue":18562182000.0,"ebitda":10869609000.0,"netProfit":6869404000.0,"grossProfit":15621927000.0,"grossProfitMargin":0.8415997106374671,"returnOnInvestment":15618014000.0,"margin":15618014000.0,"totalAssets":20618213000.0,"totalDebt":0.0,"enterpriseValue":8845617000.0,"operatingExpense":4865790000.0},"Telecel":{"revenue":0,"ebitda":0,"netProfit":0,"grossProfit":0,"grossProfitMargin":0,"returnOnInvestment":0,"margin":0,"totalAssets":0,"totalDebt":0,"enterpriseValue":0.0,"operatingExpense":0},"AT":{"revenue":0,"ebitda":0,"netProfit":0,"grossProfit":0,"grossProfitMargin":0,"returnOnInvestment":0,"margin":0,"totalAssets":0,"totalDebt":0,"enterpriseValue":0.0,"operatingExpense":0}}},"cash":{"2017":{"MTN":183693000.0,"Telecel":232895000.0,"AT":79211000.0},"2018":{"MTN":183693000.0,"Telecel":232895000.0,"AT":79211000.0},"2019":{"MTN":0.0,"Telecel":0.0,"AT":0.0},"2020":{"MTN":0.0,"Telecel":0.0,"AT":0.0},"2021":{"MTN":0.0,"Telecel":0.0,"AT":0.0},"2022":{"MTN":0.0,"Telecel":0.0,"AT":0.0},"2023":{"MTN":0.0,"Telecel":0.0,"AT":0.0},"2024":{"MTN":0.0,"Telecel":0.0,"AT":0.0},"2025":{"MTN":0.0,"Telecel":0.0,"AT":0.0}},"liabilities":{"2017":{"MTN":1934795000.0,"Telecel":7656621000.0,"AT":1905473000.0},"2018":{"MTN":1934795000.0,"Telecel":7656621000.0,"AT":1905473000.0},"2019":{"MTN":3720399000.0,"Telecel":2484690000.0,"AT":2627974000.0},"2020":{"MTN":4236505000.0,"Telecel":3893829000.0,"AT":2765823000.0},"2021":{"MTN":4109225000.0,"Telecel":4104749000.0,"AT":2058463000.0},"2022":{"MTN":4593100000.0,"Telecel":4697592000.0,"AT":2481796000.0},"2023":{"MTN":5398289000.0,"Telecel":4293013000.0,"AT":3716593000.0},"2024":{"MTN":6551952000.0,"Telecel":5805541000.0,"AT":0},"2025":{"MTN":9039652000.0,"Telecel":0,"AT":0}},"years":[2017,2018,2019,2020,2021,2022,2023,2024,2025]};
+  const DEFAULT_REGULATORY_PAYLOAD = {"version":1,"savedAt":"embedded-from-uploaded-regulatory-fee-workbook","regulatory":{"2017":{"MTN":{"invoiceIssued":0.0,"paymentReceived":7573837.16,"outstanding":-7573837.16,"feeToRevenue":0.0021820287772395734},"Telecel":{"invoiceIssued":0.0,"paymentReceived":2465144.15,"outstanding":-2465144.15,"feeToRevenue":0.0019687495457765404},"AT":{"invoiceIssued":0.0,"paymentReceived":1982692.95,"outstanding":-1982692.95,"feeToRevenue":0.0036248527346920867}},"2018":{"MTN":{"invoiceIssued":0.0,"paymentReceived":32959374.78,"outstanding":-32959374.78,"feeToRevenue":0.009495623252848525},"Telecel":{"invoiceIssued":0.0,"paymentReceived":6832852.0,"outstanding":-6832852.0,"feeToRevenue":0.005456952394186898},"AT":{"invoiceIssued":0.0,"paymentReceived":6934715.22,"outstanding":-6934715.22,"feeToRevenue":0.015749298167919167}},"2019":{"MTN":{"invoiceIssued":0.0,"paymentReceived":40416718.870000005,"outstanding":-40416718.870000005,"feeToRevenue":0.009538078091153389},"Telecel":{"invoiceIssued":0.0,"paymentReceived":8850043.709999999,"outstanding":-8850043.709999999,"feeToRevenue":0.006742828796993856},"AT":{"invoiceIssued":0.0,"paymentReceived":4631925.45,"outstanding":-4631925.45,"feeToRevenue":0.005767047677269224}},"2020":{"MTN":{"invoiceIssued":0.0,"paymentReceived":46152772.33,"outstanding":-46152772.33,"feeToRevenue":0.00963245718301258},"Telecel":{"invoiceIssued":0.0,"paymentReceived":8555376.93,"outstanding":-8555376.93,"feeToRevenue":0.006548793773753162},"AT":{"invoiceIssued":0.0,"paymentReceived":6237095.96,"outstanding":-6237095.96,"feeToRevenue":0.008510740206044894}},"2021":{"MTN":{"invoiceIssued":0.0,"paymentReceived":58170086.0,"outstanding":-58170086.0,"feeToRevenue":0.009517617055308939},"Telecel":{"invoiceIssued":0.0,"paymentReceived":4918302.04,"outstanding":-4918302.04,"feeToRevenue":0.0038217590978778027},"AT":{"invoiceIssued":0,"paymentReceived":4037601.32,"outstanding":-4037601.32,"feeToRevenue":0.002655268525582007}},"2022":{"MTN":{"invoiceIssued":0.0,"paymentReceived":79169470.99000001,"outstanding":-79169470.99000001,"feeToRevenue":0.009723292789252701},"Telecel":{"invoiceIssued":13962470.0,"paymentReceived":8397336.25,"outstanding":5565133.75,"feeToRevenue":0.005976730509855837},"AT":{"invoiceIssued":0.0,"paymentReceived":0.0,"outstanding":0.0,"feeToRevenue":0.0}},"2023":{"MTN":{"invoiceIssued":0.0,"paymentReceived":104234913.33,"outstanding":-104234913.33,"feeToRevenue":0.009718507857466988},"Telecel":{"invoiceIssued":15837770.0,"paymentReceived":15098146.25,"outstanding":739623.75,"feeToRevenue":0.00953300006882282},"AT":{"invoiceIssued":0.0,"paymentReceived":0.0,"outstanding":0.0,"feeToRevenue":0.0}},"2024":{"MTN":{"invoiceIssued":0.0,"paymentReceived":131649797.25,"outstanding":-131649797.25,"feeToRevenue":0.009568570359626894},"Telecel":{"invoiceIssued":0.0,"paymentReceived":17326345.0,"outstanding":-17326345.0,"feeToRevenue":0.009484320200827548},"AT":{"invoiceIssued":0.0,"paymentReceived":0.0,"outstanding":0.0,"feeToRevenue":0}},"2025":{"MTN":{"invoiceIssued":0.0,"paymentReceived":129315514.86999999,"outstanding":-129315514.86999999,"feeToRevenue":0.0069666117307760475},"Telecel":{"invoiceIssued":0.0,"paymentReceived":0,"outstanding":0.0,"feeToRevenue":0},"AT":{"invoiceIssued":0.0,"paymentReceived":0.0,"outstanding":0.0,"feeToRevenue":0}}},"years":[2017,2018,2019,2020,2021,2022,2023,2024,2025]};
+
+  const DEFAULT_MARKET_SHARE_PAYLOAD = {"version":2,"savedAt":"embedded-from-uploaded-financial-workbook-market-share-section","marketShare":{"revenue":{"2017":{"MTN":0.6586206072124409,"Telecel":0.23759192397283097,"AT":0.10378746881472818},"2018":{"MTN":0.6722246290909802,"Telecel":0.24249946208581333,"AT":0.08527590882320644},"2019":{"MTN":0.6669836252910001,"Telecel":0.20659427144901144,"AT":0.12642210325998846},"2020":{"MTN":0.7014545936864445,"Telecel":0.1912567146016857,"AT":0.10728869171186987},"2021":{"MTN":0.6852326973455701,"Telecel":0.14428410398331537,"AT":0.17048319867111453},"2022":{"MTN":0.7945598612578136,"Telecel":0.13710715281079397,"AT":0.0683329859313924},"2023":{"MTN":0.8288978723358214,"Telecel":0.12240000544076621,"AT":0.04870212222341239},"2024":{"MTN":0.8827851516989677,"Telecel":0.11721484830103239,"AT":0.11721484830103239},"2025":{"MTN":1.0,"Telecel":0.0,"AT":0.0}},"profitability":{"2017":{"MTN":0.3626722453786165,"Telecel":0.6373277546213835,"AT":0.0},"2018":{"MTN":0.5103145446573383,"Telecel":0.8967811213608559,"AT":-0.40709566601819414},"2019":{"MTN":7.666331864167102,"Telecel":-9.396721138152287,"AT":2.730389273985185},"2020":{"MTN":2.5713878258728418,"Telecel":-0.7247391478316183,"AT":-0.8466486780412233},"2021":{"MTN":0.8573305344103311,"Telecel":-0.07219121671764155,"AT":0.21486068230731037},"2022":{"MTN":1.6669043412535443,"Telecel":-0.4194093879600136,"AT":-0.2474949532935306},"2023":{"MTN":2.987174974216936,"Telecel":-1.5090786005398749,"AT":-0.47809637367706154},"2024":{"MTN":1.240913041211629,"Telecel":-0.24091304121162888,"AT":-0.24091304121162888},"2025":{"MTN":1.0,"Telecel":0.0,"AT":0.0}},"enterprise":{"2017":{"MTN":0.859546471024178,"Telecel":-0.15931371227019434,"AT":0.2997672412460163},"2018":{"MTN":0.859546471024178,"Telecel":-0.15931371227019434,"AT":0.2997672412460163},"2019":{"MTN":1.0831708689188129,"Telecel":0.008041893361936205,"AT":-0.09121276228074916},"2020":{"MTN":1.312461237933221,"Telecel":-0.23759081882121533,"AT":-0.07487041911200579},"2021":{"MTN":1.2425519423610079,"Telecel":-0.14015219438026985,"AT":-0.10239974798073798},"2022":{"MTN":1.4674738954597324,"Telecel":-0.22802349794494164,"AT":-0.23945039751479083},"2023":{"MTN":1.435829616194057,"Telecel":-0.08951437500365565,"AT":-0.34631524119040125},"2024":{"MTN":1.1702994905192412,"Telecel":0.0,"AT":-0.1702994905192412},"2025":{"MTN":1.0,"Telecel":0.0,"AT":0.0}}},"years":[2017,2018,2019,2020,2021,2022,2023,2024,2025]};
+
+  function getSelectedCompanies() {
+    const networkSelect = document.getElementById("networkSelect");
+    const selectedNetwork = networkSelect ? networkSelect.value : "Industry";
+    return selectedNetwork === "Industry" ? companies : [selectedNetwork];
+  }
+
+  function formatMoney(v) {
+    if(v === undefined || v === null || isNaN(Number(v))) return "N/A";
+    const num = Number(v);
+    const absNum = Math.abs(num);
+    if(absNum >= 1e12) return "GHS " + (num / 1e12).toFixed(2) + "T";
+    if(absNum >= 1e9) return "GHS " + (num / 1e9).toFixed(2) + "B";
+    if(absNum >= 1e6) return "GHS " + (num / 1e6).toFixed(1) + "M";
+    if(absNum >= 1e3) return "GHS " + (num / 1e3).toFixed(1) + "K";
+    return "GHS " + num.toLocaleString();
+  }
+  function formatPercent(v) { return (v*100).toFixed(1)+"%"; }
+
+  const profitMetricConfig = {
+    netProfit: { label: "Net Profit", field: "netProfit", type: "money" },
+    netProfitMargin: { label: "Net Profit Margin", field: "margin", type: "percent" },
+    grossProfit: { label: "Gross Profit", field: "grossProfit", type: "money" },
+    grossProfitMargin: { label: "Gross Profit Margin", field: "grossProfitMargin", type: "percent" },
+    returnOnInvestment: { label: "Return on Investment", field: "returnOnInvestment", type: "percent" }
+  };
+
+  const trendMetricConfig = {
+    operatingEfficiency: { label: "Operating Efficiency", axis: "%" },
+    revenueTrend: { label: "Revenue Trend", axis: "GHS Millions" },
+    netProfitTrend: { label: "Net Profit Trend", axis: "GHS Millions" },
+    expenseTrend: { label: "Expenditure / Operating Expense Trend", axis: "GHS Millions" }
+  };
+
+  const marketShareMetricConfig = {
+    revenue: { label: "Revenue Market Share", sourceLabel: "REVENUE", fallbackField: "revenue", forceZeroToHundredAxis: true },
+    profitability: { label: "Profitability Market Share", sourceLabel: "NET PROFIT", fallbackField: "netProfit", forceZeroToHundredAxis: false },
+    enterprise: { label: "Enterprise Value Market Share", sourceLabel: "TOTAL ENTERPRISE VALUE", fallbackField: "enterpriseValue", forceZeroToHundredAxis: false }
+  };
+
+  function normalizeRatioValue(v) {
+    if(v === undefined || v === null || isNaN(Number(v))) return 0;
+    const num = Number(v);
+    return Math.abs(num) > 1 ? num / 100 : num;
+  }
+
+  function getSafeRatio(year, comp, ratioField, numeratorField = null, denominatorField = "revenue") {
+    const d = financialData[year]?.[comp] || {};
+    const raw = d[ratioField];
+    if(raw !== undefined && raw !== null && !isNaN(Number(raw))) {
+      const num = Number(raw);
+      if(Math.abs(num) <= 1) return num;
+      if(Math.abs(num) <= 100) return num / 100;
+    }
+    if(numeratorField && d[numeratorField] !== undefined && d[numeratorField] !== null && !isNaN(Number(d[numeratorField])) && d[denominatorField]) {
+      return Number(d[numeratorField]) / Number(d[denominatorField]);
+    }
+    return 0;
+  }
+
+  function getProfitMetricValue(year, comp, metricKey) {
+    const cfg = profitMetricConfig[metricKey] || profitMetricConfig.netProfit;
+    const d = financialData[year]?.[comp] || {};
+    if(cfg.type === "money") return d[cfg.field] || 0;
+    if(metricKey === "netProfitMargin") return getSafeRatio(year, comp, "margin", "netProfit");
+    if(metricKey === "grossProfitMargin") return getSafeRatio(year, comp, "grossProfitMargin", "grossProfit");
+    if(metricKey === "returnOnInvestment") return getSafeRatio(year, comp, "returnOnInvestment", "netProfit", "totalAssets");
+    return normalizeRatioValue(d[cfg.field]);
+  }
+
+  function getProfitChartDisplayValue(year, comp, metricKey) {
+    const cfg = profitMetricConfig[metricKey] || profitMetricConfig.netProfit;
+    const raw = getProfitMetricValue(year, comp, metricKey);
+    return cfg.type === "money" ? raw / 1e6 : raw * 100;
+  }
+
+  function getProfitAxisLabel(metricKey) {
+    const cfg = profitMetricConfig[metricKey] || profitMetricConfig.netProfit;
+    return cfg.type === "money" ? "GHS Millions" : "%";
+  }
+
+  function getEnterpriseValue(year, comp) {
+    const storedEnterpriseValue = financialData[year]?.[comp]?.enterpriseValue;
+    if(storedEnterpriseValue !== undefined && storedEnterpriseValue !== null) return storedEnterpriseValue;
+    const assets = financialData[year]?.[comp]?.totalAssets || 0;
+    const debt = financialData[year]?.[comp]?.totalDebt || 0;
+    const cash = cashData[year]?.[comp] || 0;
+    return assets + debt - cash;
+  }
+
+  function getOperatingExpense(year, comp) {
+    const d = financialData[year]?.[comp] || {};
+    if(d.operatingExpense !== undefined && d.operatingExpense !== null && !isNaN(Number(d.operatingExpense))) return Number(d.operatingExpense);
+    return (d.revenue || 0) - (d.ebitda || 0);
+  }
+
+  function getIndustryTotal(year, field) {
+    return companies.reduce((sum, comp) => sum + (financialData[year]?.[comp]?.[field] || 0), 0);
+  }
+
+  function getIndustryOperatingExpense(year) {
+    return companies.reduce((sum, comp) => sum + getOperatingExpense(year, comp), 0);
+  }
+
+  function getOperatingEfficiency(year, comp) {
+    const revenue = comp === "Industry" ? getIndustryTotal(year, "revenue") : (financialData[year]?.[comp]?.revenue || 0);
+    const expense = comp === "Industry" ? getIndustryOperatingExpense(year) : getOperatingExpense(year, comp);
+    return revenue ? (expense / revenue) * 100 : 0;
+  }
+
+  function getTrendSeriesValue(year, comp, metricKey) {
+    if(metricKey === "operatingEfficiency") return getOperatingEfficiency(year, comp);
+    if(metricKey === "revenueTrend") return (comp === "Industry" ? getIndustryTotal(year, "revenue") : (financialData[year]?.[comp]?.revenue || 0)) / 1e6;
+    if(metricKey === "netProfitTrend") return (comp === "Industry" ? getIndustryTotal(year, "netProfit") : (financialData[year]?.[comp]?.netProfit || 0)) / 1e6;
+    if(metricKey === "expenseTrend") return (comp === "Industry" ? getIndustryOperatingExpense(year) : getOperatingExpense(year, comp)) / 1e6;
+    return 0;
+  }
+
+  function renderTrendAnalysisChart() {
+    const trendCanvas = document.getElementById("trendAnalysisChart");
+    if(!trendCanvas || !yearsList || yearsList.length === 0) return;
+    const activeCompanies = getSelectedCompanies();
+    const cfg = trendMetricConfig[activeTrendMetric] || trendMetricConfig.operatingEfficiency;
+    const trendTitle = document.getElementById("trendTitle");
+    if(trendTitle) trendTitle.innerHTML = `📊 Financial Trend Analysis - ${cfg.label}`;
+    const trendLabels = yearsList.map(y=>y.toString());
+    let trendDatasets = [];
+    if(activeCompanies.length > 1) {
+      trendDatasets.push({ label: `Industry ${cfg.label}`, data: yearsList.map(y=> getTrendSeriesValue(y, "Industry", activeTrendMetric)), borderColor: "#5DE4C7", backgroundColor: "transparent", fill: false, tension: 0.2 });
+      activeCompanies.forEach(comp => trendDatasets.push({ label: `${comp} ${cfg.label}`, data: yearsList.map(y=> getTrendSeriesValue(y, comp, activeTrendMetric)), borderColor: companyColors[comp], backgroundColor: "transparent", borderDash: [5,5], fill: false, tension: 0.2 }));
+    } else {
+      const comp = activeCompanies[0];
+      trendDatasets.push({ label: `${comp} ${cfg.label}`, data: yearsList.map(y=> getTrendSeriesValue(y, comp, activeTrendMetric)), borderColor: companyColors[comp], backgroundColor: "transparent", fill: false, tension: 0.2 });
+    }
+    if(charts.trendAnalysisChart) charts.trendAnalysisChart.destroy();
+    charts.trendAnalysisChart = new Chart(trendCanvas, { type: 'line', data: { labels: trendLabels, datasets: trendDatasets }, options: { responsive: true, scales: { y: { title: { display: true, text: cfg.axis, color: "#FFD966" } } } } });
+  }
+
+
+  function safeGrowth(current, previous) {
+    if(previous === undefined || previous === null || previous === 0 || current === undefined || current === null) return null;
+    return ((current - previous) / Math.abs(previous)) * 100;
+  }
+
+  function formatInsightNumber(v, type = "money") {
+    if(type === "percent") return (Number(v) || 0).toFixed(1) + "%";
+    return formatMoney(v);
+  }
+
+  function getSelectedYearRange(selectedYear) {
+    if(!yearsList || yearsList.length === 0) return [];
+    if(selectedYear === "all") return yearsList;
+    const y = parseInt(selectedYear);
+    return isNaN(y) ? yearsList : [y];
+  }
+
+  function getLatestYearInScope(selectedYear) {
+    const yr = getSelectedYearRange(selectedYear);
+    return yr.length ? Math.max(...yr) : null;
+  }
+
+  function getPreviousYearInData(year) {
+    const idx = yearsList.indexOf(Number(year));
+    return idx > 0 ? yearsList[idx - 1] : null;
+  }
+
+  function hasCompanyRecord(year, comp) {
+    const d = financialData[year]?.[comp];
+    if(!d) return false;
+    return ["revenue", "ebitda", "netProfit", "grossProfit", "totalAssets", "totalLiabilities", "enterpriseValue", "operatingExpense"]
+      .some(field => d[field] !== undefined && d[field] !== null && !isNaN(Number(d[field])) && Number(d[field]) !== 0);
+  }
+
+  function getAvailableYearsForCompany(comp, selectedYear) {
+    return getSelectedYearRange(selectedYear).filter(y => hasCompanyRecord(y, comp));
+  }
+
+  function getLatestAvailableYearForCompany(comp, selectedYear) {
+    const availableYears = getAvailableYearsForCompany(comp, selectedYear);
+    return availableYears.length ? Math.max(...availableYears) : null;
+  }
+
+  function getPreviousAvailableYearForCompany(comp, selectedYear, year) {
+    const availableYears = getAvailableYearsForCompany(comp, selectedYear).filter(y => y < Number(year));
+    return availableYears.length ? Math.max(...availableYears) : null;
+  }
+
+  function getLatestAvailableYearForScope(activeCompanies, selectedYear) {
+    const availableYears = getSelectedYearRange(selectedYear).filter(y => activeCompanies.some(comp => hasCompanyRecord(y, comp)));
+    return availableYears.length ? Math.max(...availableYears) : null;
+  }
+
+  function getPreviousAvailableYearForScope(activeCompanies, selectedYear, year) {
+    const availableYears = getSelectedYearRange(selectedYear).filter(y => y < Number(year) && activeCompanies.some(comp => hasCompanyRecord(y, comp)));
+    return availableYears.length ? Math.max(...availableYears) : null;
+  }
+
+  function companyCoverageText(comp, selectedYear) {
+    const scopeYears = getSelectedYearRange(selectedYear);
+    const availableYears = getAvailableYearsForCompany(comp, selectedYear);
+    const missingYears = scopeYears.filter(y => !availableYears.includes(y));
+    if(!scopeYears.length) return `${comp}: no year scope selected`;
+    if(!availableYears.length) return `${comp}: no available records in this scope`;
+    const coverage = `${availableYears.length}/${scopeYears.length} years`;
+    return missingYears.length ? `${comp}: ${coverage}, missing ${missingYears.join(", ")}` : `${comp}: ${coverage}`;
+  }
+
+  function companyRevenueForYear(year, comp) {
+    return hasCompanyRecord(year, comp) ? (financialData[year]?.[comp]?.revenue || 0) : null;
+  }
+
+  function companyTotalInScope(comp, field, selectedYear) {
+    return getAvailableYearsForCompany(comp, selectedYear).reduce((sum, y) => sum + (financialData[y]?.[comp]?.[field] || 0), 0);
+  }
+
+  function companyEnterpriseValueInScope(comp, selectedYear) {
+    return getAvailableYearsForCompany(comp, selectedYear).reduce((sum, y) => sum + (getEnterpriseValue(y, comp) || 0), 0);
+  }
+
+  function getTopCompanyByMetric(field, selectedYear) {
+    const activeCompanies = getSelectedCompanies();
+    let ranked = activeCompanies
+      .filter(comp => getAvailableYearsForCompany(comp, selectedYear).length > 0)
+      .map(comp => ({ comp, value: companyTotalInScope(comp, field, selectedYear) }));
+    ranked.sort((a,b) => b.value - a.value);
+    return ranked[0] || null;
+  }
+
+  function getTopCompanyByEnterpriseValue(selectedYear) {
+    const activeCompanies = getSelectedCompanies();
+    let ranked = activeCompanies
+      .filter(comp => getAvailableYearsForCompany(comp, selectedYear).length > 0)
+      .map(comp => ({ comp, value: companyEnterpriseValueInScope(comp, selectedYear) }));
+    ranked.sort((a,b) => b.value - a.value);
+    return ranked[0] || null;
+  }
+
+  function getFastestRevenueGrowthCompany(selectedYear) {
+    const activeCompanies = getSelectedCompanies();
+    const ranked = activeCompanies.map(comp => {
+      const latestYear = getLatestAvailableYearForCompany(comp, selectedYear);
+      const previousYear = latestYear ? getPreviousAvailableYearForCompany(comp, selectedYear, latestYear) : null;
+      const current = latestYear ? companyRevenueForYear(latestYear, comp) : null;
+      const previous = previousYear ? companyRevenueForYear(previousYear, comp) : null;
+      return { comp, value: safeGrowth(current, previous), current, previous, latestYear, previousYear };
+    }).filter(x => x.value !== null).sort((a,b) => b.value - a.value);
+    return ranked[0] || null;
+  }
+
+  function getBestProfitabilityCompany(selectedYear) {
+    const activeCompanies = getSelectedCompanies();
+    const ranked = activeCompanies.map(comp => {
+      const latestYear = getLatestAvailableYearForCompany(comp, selectedYear);
+      return latestYear ? { comp, value: getSafeRatio(latestYear, comp, "margin", "netProfit") * 100, latestYear } : null;
+    }).filter(Boolean).sort((a,b) => b.value - a.value);
+    return ranked[0] || null;
+  }
+
+  function getBestOperatingEfficiencyCompany(selectedYear) {
+    const activeCompanies = getSelectedCompanies();
+    const ranked = activeCompanies.map(comp => {
+      const latestYear = getLatestAvailableYearForCompany(comp, selectedYear);
+      return latestYear ? { comp, value: getOperatingEfficiency(latestYear, comp), latestYear } : null;
+    }).filter(Boolean).sort((a,b) => a.value - b.value);
+    return ranked[0] || null;
+  }
+
+  function updateInsightsPanel(selectedYear) {
+    const content = document.getElementById("insightsContent");
+    const scope = document.getElementById("insightsScope");
+    if(!content) return;
+    if(!yearsList || yearsList.length === 0 || Object.keys(financialData || {}).length === 0) {
+      content.innerHTML = '<div class="insight-empty">Upload or load financial data to generate automatic insights from the charts.</div>';
+      if(scope) scope.textContent = "Upload Excel to generate insights";
+      return;
+    }
+
+    const activeCompanies = getSelectedCompanies();
+    const selectedNetwork = document.getElementById("networkSelect")?.value || "Industry";
+    const yearsInScope = getSelectedYearRange(selectedYear);
+    const latestYear = getLatestAvailableYearForScope(activeCompanies, selectedYear);
+    const previousYear = latestYear ? getPreviousAvailableYearForScope(activeCompanies, selectedYear, latestYear) : null;
+    const yearLabel = selectedYear === "all" ? `${Math.min(...yearsInScope)}–${Math.max(...yearsInScope)}` : `${selectedYear}`;
+    if(scope) scope.textContent = `${selectedNetwork} | ${yearLabel}`;
+
+    const totalRevenue = activeCompanies.reduce((sum, comp) => sum + companyTotalInScope(comp, "revenue", selectedYear), 0);
+    const totalNetProfit = activeCompanies.reduce((sum, comp) => sum + companyTotalInScope(comp, "netProfit", selectedYear), 0);
+    const totalEnterpriseValue = activeCompanies.reduce((sum, comp) => sum + companyEnterpriseValueInScope(comp, selectedYear), 0);
+    const topRevenue = getTopCompanyByMetric("revenue", selectedYear);
+    const topEV = getTopCompanyByEnterpriseValue(selectedYear);
+    const fastestGrowth = getFastestRevenueGrowthCompany(selectedYear);
+    const bestMargin = getBestProfitabilityCompany(selectedYear);
+    const bestEfficiency = getBestOperatingEfficiencyCompany(selectedYear);
+
+    let industryGrowthText = "Growth comparison is limited because a previous year is not available in the current dataset.";
+    if(previousYear) {
+      const currentIndustryRev = activeCompanies.reduce((sum, comp) => sum + (companyRevenueForYear(latestYear, comp) || 0), 0);
+      const previousIndustryRev = activeCompanies.reduce((sum, comp) => sum + (companyRevenueForYear(previousYear, comp) || 0), 0);
+      const industryGrowth = safeGrowth(currentIndustryRev, previousIndustryRev);
+      const currentCoverage = activeCompanies.filter(comp => hasCompanyRecord(latestYear, comp)).length;
+      const previousCoverage = activeCompanies.filter(comp => hasCompanyRecord(previousYear, comp)).length;
+      if(industryGrowth !== null) industryGrowthText = `Revenue moved by ${industryGrowth.toFixed(1)}% between ${previousYear} and ${latestYear} based on available MNO records (${previousCoverage}/${activeCompanies.length} operators in ${previousYear}, ${currentCoverage}/${activeCompanies.length} in ${latestYear}).`;
+    }
+
+    const netProfitMarginScope = totalRevenue ? (totalNetProfit / totalRevenue) * 100 : 0;
+    const currentTrendLabel = trendMetricConfig[activeTrendMetric]?.label || "selected trend";
+    const currentProfitLabel = profitMetricConfig[activeProfitMetric]?.label || "selected profitability metric";
+    const profitDescriptor = totalNetProfit < 0 ? "net loss" : "net profit";
+    const profitConversionDescriptor = totalNetProfit < 0 ? "net loss margin" : "net profit conversion";
+    const profitConversionTitle = totalNetProfit < 0 ? "Loss Conversion" : "Profit Conversion";
+    const profitConversionValue = `${Math.abs(netProfitMarginScope).toFixed(1)}%`;
+    const profitConversionNote = totalNetProfit < 0
+      ? "This reflects net loss as a share of revenue for the selected scope."
+      : "This reflects net profit as a share of revenue for the selected scope.";
+    const formattedProfitResult = totalNetProfit < 0 ? formatMoney(Math.abs(totalNetProfit)) : formatMoney(totalNetProfit);
+    const revenueComparison = companies
+      .filter(comp => getAvailableYearsForCompany(comp, selectedYear).length > 0)
+      .map(comp => ({ comp, value: companyTotalInScope(comp, "revenue", selectedYear), coverage: getAvailableYearsForCompany(comp, selectedYear).length }))
+      .sort((a,b) => b.value - a.value);
+    const selectedRevenueRank = revenueComparison.findIndex(item => item.comp === selectedNetwork) + 1;
+    const revenuePeerText = revenueComparison
+      .map(item => `${item.comp}: <strong>${formatMoney(item.value)}</strong> (${item.coverage}/${yearsInScope.length} years)`)
+      .join("; ");
+    const coverageSummary = activeCompanies.map(comp => companyCoverageText(comp, selectedYear)).join("; ");
+    const missingCoverageCompanies = activeCompanies.filter(comp => getAvailableYearsForCompany(comp, selectedYear).length < yearsInScope.length);
+    let revenueLeadershipText = "";
+    if(selectedNetwork === "Industry") {
+      const leader = revenueComparison[0];
+      revenueLeadershipText = leader
+        ? `<p><strong>Revenue leadership:</strong> Within the industry view, ${leader.comp} leads the peer set with <strong>${formatMoney(leader.value)}</strong>. The full MNO revenue comparison for the selected period is ${revenuePeerText}, showing how revenue scale is distributed across operators with available records.</p>`
+        : "";
+    } else {
+      const selectedRevenue = companyTotalInScope(selectedNetwork, "revenue", selectedYear);
+      const leader = revenueComparison[0];
+      const rankText = selectedRevenueRank > 0 ? `ranks <strong>${selectedRevenueRank}</strong> of ${revenueComparison.length}` : "has no available revenue record";
+      revenueLeadershipText = `<p><strong>Revenue leadership:</strong> ${selectedNetwork} records <strong>${formatMoney(selectedRevenue)}</strong> in the selected period and ${rankText} among MNOs with available data. Across the same scope, the peer comparison is ${revenuePeerText || "not available"}. ${leader ? `${leader.comp} holds the strongest revenue position, so ${selectedNetwork}'s performance should be read against that market benchmark and the number of years available for each operator.` : ""}</p>`;
+    }
+
+    const revenuePositionNote = selectedNetwork === "Industry"
+      ? (revenueComparison[0] ? `${revenueComparison[0].comp} leads the MNO revenue comparison in the current scope.` : "Revenue ranking is not available.")
+      : `${selectedNetwork} ${selectedRevenueRank > 0 ? `ranks ${selectedRevenueRank} of ${revenueComparison.length}` : "has no available record"} among MNOs with data for this scope.`;
+
+    const miniCards = [
+      { title: "Revenue Position", value: formatInsightNumber(totalRevenue), note: revenuePositionNote },
+      { title: profitConversionTitle, value: profitConversionValue, note: profitConversionNote },
+      { title: "Enterprise Value", value: formatInsightNumber(totalEnterpriseValue), note: topEV ? `${topEV.comp} carries the strongest enterprise value position.` : "Enterprise value ranking is not available." },
+      { title: "Efficiency Signal", value: bestEfficiency ? bestEfficiency.value.toFixed(1) + "%" : "N/A", note: bestEfficiency ? (activeCompanies.length === 1 ? `${bestEfficiency.comp}'s latest available expense-to-revenue ratio is from ${bestEfficiency.latestYear}.` : `${bestEfficiency.comp} has the lowest operating expense-to-revenue ratio in ${bestEfficiency.latestYear}.`) : "Efficiency comparison is unavailable." }
+    ];
+
+    const miniHtml = miniCards.map(card => `<div class="insight-mini-card"><div class="insight-mini-title">${card.title}</div><div class="insight-mini-value">${card.value}</div><div class="insight-mini-note">${card.note}</div></div>`).join('');
+
+    const narrative = [];
+    narrative.push(`<p><strong>Executive reading:</strong> For the selected scope (${selectedNetwork}, ${yearLabel}), the dashboard shows total revenue of <strong>${formatMoney(totalRevenue)}</strong> and ${profitDescriptor} of <strong>${formattedProfitResult}</strong>. The implied ${profitConversionDescriptor} is <strong>${profitConversionValue}</strong>, which gives a quick view of ${totalNetProfit < 0 ? "how much revenue is being eroded by losses" : "how much revenue is being retained as profit"}.</p>`);
+    if(revenueLeadershipText) narrative.push(revenueLeadershipText);
+    if(fastestGrowth) narrative.push(`<p><strong>Growth momentum:</strong> ${fastestGrowth.comp} records the strongest latest-year revenue growth, moving by <strong>${fastestGrowth.value.toFixed(1)}%</strong> from ${fastestGrowth.previousYear} to ${fastestGrowth.latestYear}. ${industryGrowthText}</p>`);
+    else narrative.push(`<p><strong>Growth momentum:</strong> ${industryGrowthText}</p>`);
+    if(bestMargin) {
+      const marginLabel = bestMargin.value < 0 ? "net loss margin" : "net profit margin";
+      const marginInterpretation = bestMargin.value < 0
+        ? `${bestMargin.comp} is loss-making, with a ${marginLabel} of <strong>${Math.abs(bestMargin.value).toFixed(1)}%</strong>.`
+        : `${bestMargin.comp} records the strongest ${marginLabel} at <strong>${bestMargin.value.toFixed(1)}%</strong>.`;
+      narrative.push(`<p><strong>Profitability:</strong> In ${bestMargin.latestYear}, ${marginInterpretation} The active Profitability Analysis chart is currently focused on <strong>${currentProfitLabel}</strong>, so this section should be read together with that selected metric.</p>`);
+    }
+    if(bestEfficiency) {
+      const efficiencyInterpretation = bestEfficiency.value >= 100
+        ? "This means operating expenses are broadly equal to or above revenue, so cost pressure remains significant."
+        : bestEfficiency.value >= 80
+          ? "This indicates a high cost load, even though expenses remain below revenue."
+          : "This indicates comparatively stronger cost discipline within the available records.";
+      const efficiencyPhrase = activeCompanies.length === 1
+        ? `${bestEfficiency.comp}'s latest available operating expense-to-revenue ratio is <strong>${bestEfficiency.value.toFixed(1)}%</strong> in ${bestEfficiency.latestYear}.`
+        : `${bestEfficiency.comp} has the lowest operating expense-to-revenue ratio among MNOs with available records, at <strong>${bestEfficiency.value.toFixed(1)}%</strong> in ${bestEfficiency.latestYear}.`;
+      narrative.push(`<p><strong>Operating efficiency:</strong> ${efficiencyPhrase} ${efficiencyInterpretation}</p>`);
+    }
+    narrative.push(`<p><strong>Trend interpretation:</strong> The Financial Trend Analysis chart is currently set to <strong>${currentTrendLabel}</strong>. Use this together with the revenue, profitability, assets/liabilities, and enterprise value charts to identify whether financial growth is being supported by sustainable profitability and balance-sheet strength.</p>`);
+    narrative.push(`<ul><li><strong>Opportunity flag:</strong> Operators with rising revenue and stable or improving margins are showing healthier monetisation.</li><li><strong>Risk flag:</strong> If operating expenses rise faster than revenue, future profitability may weaken even when revenue grows.</li><li><strong>Regulatory insight:</strong> Comparing enterprise value, assets, liabilities, and profit helps reveal whether market strength is supported by sustainable investment capacity.</li></ul>`);
+
+    const limitationsHtml = `<div class="data-limitations-note"><strong>Data limitations:</strong> Some MNOs do not have records for every year in the selected scope. Blank or unavailable MNO-year records are excluded from insight calculations where possible, so rankings, ratios, and trends may reflect different year coverage across MTN, Telecel, and AT. Read comparisons together with the underlying workbook data and available-year coverage.</div>`;
+    content.innerHTML = `<div class="insights-grid">${miniHtml}</div>${limitationsHtml}<div class="insight-writeup">${narrative.join('')}</div>`;
+  }
+
+
+  // ---------- Excel parsing (SheetJS) ----------
+  async function parseExcelAndBuildData(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const newFinancial = {};
+        const newCash = {};
+        const newLiabilities = {};
+        const newMarketShare = { revenue: {}, profitability: {}, enterprise: {} };
+        const sheets = workbook.SheetNames;
+        const yearRegex = /^\d{4}$/; // sheet names like 2017, 2018, 2026
+        const validYears = sheets.filter(name => yearRegex.test(name)).map(Number).sort((a,b)=>a-b);
+        if(validYears.length === 0) {
+          reject("No sheets named with 4-digit year (e.g., 2017) found.");
+          return;
+        }
+        for (let y of validYears) {
+          const sheet = workbook.Sheets[y.toString()];
+          if(!sheet) continue;
+          const dataRows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+          const findHeaderRowForMarketShare = () => {
+            for(let i=0; i<dataRows.length; i++) {
+              const row = dataRows[i].map(v => v ? v.toString().trim().toUpperCase() : "");
+              const totalIdx = row.findIndex(x => x === "TOTAL");
+              const mtnAfterTotal = row.findIndex((x, idx) => idx > totalIdx && x === "MTN");
+              const telecelAfterTotal = row.findIndex((x, idx) => idx > totalIdx && (x === "TELECEL" || x === "VODAFONE"));
+              const atAfterTotal = row.findIndex((x, idx) => idx > totalIdx && x === "AT");
+              if(totalIdx >= 0 && mtnAfterTotal >= 0 && telecelAfterTotal >= 0 && atAfterTotal >= 0) {
+                return { MTN: mtnAfterTotal, Telecel: telecelAfterTotal, AT: atAfterTotal };
+              }
+            }
+            // Fallback for the workbook layout where MARKET SHARE starts in columns F-H.
+            return { MTN: 5, Telecel: 6, AT: 7 };
+          };
+          // Find rows by first column label (case-insensitive)
+          const getRow = (label) => {
+            for(let i=0; i<dataRows.length; i++) {
+              const firstCell = dataRows[i][0] ? dataRows[i][0].toString().trim().toUpperCase() : "";
+              if(firstCell === label.toUpperCase()) return dataRows[i];
+            }
+            return null;
+          };
+          const getRowAny = (labels) => {
+            for(const label of labels) {
+              const row = getRow(label);
+              if(row) return row;
+            }
+            return null;
+          };
+          // Helper to extract values from columns B,C,D (index 1,2,3)
+          const getCompanyValue = (row, colIdx) => {
+            if(!row || row.length <= colIdx) return null;
+            let val = row[colIdx];
+            if(typeof val === 'string') val = val.replace(/,/g, '');
+            const num = parseFloat(val);
+            return isNaN(num) ? null : num;
+          };
+          const revRow = getRow("REVENUE");
+          const ebitdaRow = getRow("EBITDA");
+          const netProfitRow = getRow("NET PROFIT");
+          const marginRow = getRow("NET PROFIT MARGIN");
+          const grossProfitRow = getRowAny(["GROSS PROFIT", "TOTAL GROSS PROFIT"]);
+          const grossProfitMarginRow = getRowAny(["GROSS PROFIT MARGIN", "GROSS MARGIN"]);
+          const returnOnInvestmentRow = getRowAny(["RETURN ON INVESTMENT", "RETURN ON INVESTMENT", "ROI"]);
+          const assetsRow = getRow("TOTAL ASSETS");
+          const debtRow = getRow("TOTAL DEBT");
+          const cashRow = getRow("CASH AND CASH EQUIVALENTS");
+          const liabRow = getRow("TOTAL LIABILITIES");
+          const enterpriseValueRow = getRow("TOTAL ENTERPRISE VALUE");
+          const operatingExpenseRow = getRowAny(["OPERATING EXPENSES", "OPERATING EXPENSE", "TRADING EXPENSES", "TRADING EXPENSE", "EXPENDITURE", "TOTAL EXPENDITURE", "TOTAL OPERATING EXPENSES"]);
+
+          // Also try alternative naming: sometimes "NET PROFIT BEFORE TAX" but we use NET PROFIT. For margin we compute from netProfit/revenue if missing.
+          const mtnIdx = 1, telecelIdx = 2, atIdx = 3;
+          const companiesMap = { "MTN": mtnIdx, "Telecel": telecelIdx, "AT": atIdx };
+          const yearData = {};
+          const cashYear = {};
+          const liabYear = {};
+          for(let comp of companies) {
+            const col = companiesMap[comp];
+            const revenue = getCompanyValue(revRow, col) || 0;
+            const ebitda = getCompanyValue(ebitdaRow, col) || 0;
+            let netProfit = getCompanyValue(netProfitRow, col) || 0;
+            let margin = getCompanyValue(marginRow, col);
+            if(margin === null && revenue !== 0) margin = netProfit / revenue;
+            else if(margin === null) margin = 0;
+            const grossProfit = getCompanyValue(grossProfitRow, col) || 0;
+            let grossProfitMargin = getCompanyValue(grossProfitMarginRow, col);
+            if(grossProfitMargin === null && revenue !== 0 && grossProfit !== 0) grossProfitMargin = grossProfit / revenue;
+            else if(grossProfitMargin === null) grossProfitMargin = 0;
+            let returnOnInvestment = getCompanyValue(returnOnInvestmentRow, col);
+            if(returnOnInvestment === null) returnOnInvestment = margin;
+            const totalAssets = getCompanyValue(assetsRow, col) || 0;
+            const totalDebt = getCompanyValue(debtRow, col) || 0;
+            const cash = getCompanyValue(cashRow, col) || 0;
+            const liabilities = getCompanyValue(liabRow, col) || 0;
+            const enterpriseValue = getCompanyValue(enterpriseValueRow, col);
+            let operatingExpense = getCompanyValue(operatingExpenseRow, col);
+            if(operatingExpense === null && revenue !== 0) operatingExpense = revenue - ebitda;
+            else if(operatingExpense === null) operatingExpense = 0;
+            yearData[comp] = { revenue, ebitda, netProfit, grossProfit, grossProfitMargin, returnOnInvestment, margin, totalAssets, totalDebt, enterpriseValue, operatingExpense };
+            cashYear[comp] = cash;
+            liabYear[comp] = liabilities;
+          }
+          const marketCols = findHeaderRowForMarketShare();
+          const marketShareRows = {
+            revenue: revRow,
+            profitability: netProfitRow,
+            enterprise: enterpriseValueRow
+          };
+          Object.keys(marketShareRows).forEach(metricKey => {
+            const marketYear = {};
+            companies.forEach(comp => {
+              const rawShare = getCompanyValue(marketShareRows[metricKey], marketCols[comp]);
+              // The workbook's MARKET SHARE section stores ratios directly, including values above 1 or below 0
+              // for profitability/enterprise years with negative totals. Preserve those source-of-truth values.
+              marketYear[comp] = rawShare === null ? 0 : rawShare;
+            });
+            newMarketShare[metricKey][y] = marketYear;
+          });
+          newFinancial[y] = yearData;
+          newCash[y] = cashYear;
+          newLiabilities[y] = liabYear;
+        }
+        resolve({ financial: newFinancial, cash: newCash, liabilities: newLiabilities, marketShare: newMarketShare, years: validYears });
+      };
+      reader.onerror = reject;
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+
+  function parseNumberValue(val) {
+    if(val === undefined || val === null || val === "") return 0;
+    if(typeof val === "string") val = val.replace(/,/g, "").trim();
+    const num = parseFloat(val);
+    return isNaN(num) ? 0 : num;
+  }
+
+  function normalizeCompanyName(name) {
+    const n = (name || "").toString().trim().toUpperCase();
+    if(n.includes("MTN")) return "MTN";
+    if(n.includes("TELECEL") || n.includes("VODAFONE")) return "Telecel";
+    if(n === "AT" || n.includes("AIRTELTIGO") || n.includes("AIRTEL") || n.includes("TIGO")) return "AT";
+    return null;
+  }
+
+  async function parseRegulatoryFeeWorkbook(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: "array", cellDates: false, raw: true });
+          const yearRegex = /^\d{4}$/;
+          const validYears = workbook.SheetNames.filter(name => yearRegex.test(String(name).trim())).map(Number).sort((a,b)=>a-b);
+          if(validYears.length === 0) {
+            reject("No regulatory fee sheets named with 4-digit years were found.");
+            return;
+          }
+
+          const clean = (v) => (v === undefined || v === null) ? "" : String(v).trim();
+          const cleanUpper = (v) => clean(v).toUpperCase();
+
+          // This parser is intentionally built for the real regulatory fee workbook layout:
+          // PERIOD | OPERATOR | INVOICE ISSUED (GHS) | PAYMENT RECEIVED (GHS)
+          // Q1/Q2/Q3/Q4 rows, followed by a SUM row for each operator block.
+          // It does NOT assume fixed Excel columns. It first discovers the header row,
+          // then reads the SUM row under each MTN/TELECEL/AT block.
+          const parsed = {};
+          validYears.forEach(y => {
+            const sheet = workbook.Sheets[String(y)];
+            const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "", raw: true });
+            const yearData = {
+              MTN: { invoiceIssued: 0, paymentReceived: 0, outstanding: 0, feeToRevenue: 0 },
+              Telecel: { invoiceIssued: 0, paymentReceived: 0, outstanding: 0, feeToRevenue: 0 },
+              AT: { invoiceIssued: 0, paymentReceived: 0, outstanding: 0, feeToRevenue: 0 }
+            };
+
+            let periodCol = -1, operatorCol = -1, invoiceCol = -1, paymentCol = -1;
+            for(let r = 0; r < rows.length; r++) {
+              const upperRow = rows[r].map(cleanUpper);
+              const pIdx = upperRow.findIndex(x => x === "PERIOD");
+              const oIdx = upperRow.findIndex(x => x === "OPERATOR");
+              const iIdx = upperRow.findIndex(x => x.includes("INVOICE") && x.includes("ISSUED"));
+              const payIdx = upperRow.findIndex(x => x.includes("PAYMENT") && x.includes("RECEIVED"));
+              if(pIdx >= 0 && oIdx >= 0 && iIdx >= 0 && payIdx >= 0) {
+                periodCol = pIdx;
+                operatorCol = oIdx;
+                invoiceCol = iIdx;
+                paymentCol = payIdx;
+                break;
+              }
+            }
+
+            // Fallback to the known workbook columns only if header discovery fails.
+            if(periodCol < 0 || operatorCol < 0 || invoiceCol < 0 || paymentCol < 0) {
+              periodCol = 2;
+              operatorCol = 3;
+              invoiceCol = 4;
+              paymentCol = 5;
+            }
+
+            let currentCompany = null;
+            rows.forEach(row => {
+              const operator = normalizeCompanyName(row[operatorCol]);
+              if(operator) currentCompany = operator;
+
+              const period = cleanUpper(row[periodCol]);
+              const isSumRow = period === "SUM" || period === "TOTAL" || period.includes("SUBTOTAL");
+              if(isSumRow && currentCompany && yearData[currentCompany]) {
+                const invoiceIssued = parseNumberValue(row[invoiceCol]);
+                const paymentReceived = parseNumberValue(row[paymentCol]);
+                yearData[currentCompany].invoiceIssued += invoiceIssued;
+                yearData[currentCompany].paymentReceived += paymentReceived;
+              }
+            });
+
+            // Secondary fallback: if a workbook has no SUM rows, aggregate Q rows per operator.
+            const allZero = companies.every(comp => yearData[comp].invoiceIssued === 0 && yearData[comp].paymentReceived === 0);
+            if(allZero) {
+              let fallbackCompany = null;
+              rows.forEach(row => {
+                const operator = normalizeCompanyName(row[operatorCol]);
+                if(operator) fallbackCompany = operator;
+                const period = cleanUpper(row[periodCol]);
+                if(["Q1", "Q2", "Q3", "Q4"].includes(period) && fallbackCompany && yearData[fallbackCompany]) {
+                  yearData[fallbackCompany].invoiceIssued += parseNumberValue(row[invoiceCol]);
+                  yearData[fallbackCompany].paymentReceived += parseNumberValue(row[paymentCol]);
+                }
+              });
+            }
+
+            companies.forEach(comp => {
+              const d = yearData[comp];
+              d.outstanding = d.invoiceIssued - d.paymentReceived;
+              const revenue = financialData[y]?.[comp]?.revenue || 0;
+              d.feeToRevenue = revenue ? d.paymentReceived / revenue : 0;
+            });
+            parsed[y] = yearData;
+          });
+
+          resolve({ regulatory: parsed, years: validYears });
+        } catch(err) {
+          reject(err);
+        }
+      };
+      reader.onerror = reject;
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  function buildRegulatoryPayload(regulatory, years) {
+    return { version: 1, savedAt: new Date().toISOString(), regulatory, years };
+  }
+
+  function saveRegulatoryPayload(payload) {
+    try { localStorage.setItem(REGULATORY_CACHE_KEY, JSON.stringify(payload)); }
+    catch(err) { console.warn("Regulatory fee values were loaded but could not be stored.", err); }
+  }
+
+  function loadRegulatoryPayload() {
+    try {
+      const raw = localStorage.getItem(REGULATORY_CACHE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch(err) {
+      console.warn("Could not load saved regulatory fee snapshot.", err);
+      return null;
+    }
+  }
+
+  function applyRegulatoryPayload(payload, preserveSelection = true) {
+    if(!payload || !payload.regulatory || !payload.years) return false;
+    regulatoryData = payload.regulatory || {};
+    regulatoryYearsList = (payload.years || []).map(Number).sort((a,b)=>a-b);
+    if(regulatoryYearsList.length === 0) return false;
+    recalculateRegulatoryFeeRates();
+    const selectedYear = document.getElementById("yearSelect")?.value || "all";
+    renderRegulatoryFeeAnalytics(selectedYear);
+    return true;
+  }
+
+  function recalculateRegulatoryFeeRates() {
+    if(!regulatoryData) return;
+    Object.keys(regulatoryData).forEach(year => {
+      companies.forEach(comp => {
+        if(!regulatoryData[year][comp]) regulatoryData[year][comp] = { invoiceIssued: 0, paymentReceived: 0, outstanding: 0, feeToRevenue: 0 };
+        const revenue = financialData[year]?.[comp]?.revenue || 0;
+        regulatoryData[year][comp].feeToRevenue = revenue ? (regulatoryData[year][comp].paymentReceived || 0) / revenue : 0;
+      });
+    });
+  }
+
+  function getRegulatorySelectedYears(selectedYear) {
+    if(!regulatoryYearsList || regulatoryYearsList.length === 0) return [];
+    if(selectedYear === "all") return regulatoryYearsList;
+    const y = parseInt(selectedYear);
+    return isNaN(y) || !regulatoryYearsList.includes(y) ? regulatoryYearsList : [y];
+  }
+
+  function getRegulatoryIndustryTotal(year, field) {
+    return companies.reduce((sum, comp) => sum + (regulatoryData[year]?.[comp]?.[field] || 0), 0);
+  }
+
+  const regulatoryTableItemConfig = [
+    { key: "invoiceIssued", label: "Invoice Issued", type: "money", get: (y, c) => regulatoryData[y]?.[c]?.invoiceIssued || 0 },
+    { key: "paymentReceived", label: "Payment Received", type: "money", get: (y, c) => regulatoryData[y]?.[c]?.paymentReceived || 0 },
+    { key: "outstanding", label: "Outstanding", type: "money", get: (y, c) => regulatoryData[y]?.[c]?.outstanding || 0 },
+    { key: "feeToRevenue", label: "Fee Received / Revenue", type: "percent", get: (y, c) => regulatoryData[y]?.[c]?.feeToRevenue || 0 }
+  ];
+
+  function populateRegulatoryTableYearFilter() {
+    const yearSelect = document.getElementById("regulatoryTableYearFilter");
+    if(!yearSelect) return;
+    const currentValue = yearSelect.value || "dashboard";
+    let options = '<option value="dashboard">Dashboard Year Selection</option><option value="all">All Years</option>';
+    regulatoryYearsList.forEach(y => { options += `<option value="${y}">${y}</option>`; });
+    yearSelect.innerHTML = options;
+    if(currentValue === "dashboard" || currentValue === "all" || regulatoryYearsList.map(String).includes(String(currentValue))) {
+      yearSelect.value = currentValue;
+    } else {
+      yearSelect.value = "dashboard";
+    }
+  }
+
+  function populateRegulatoryTableItemFilter() {
+    const itemSelect = document.getElementById("regulatoryTableItemFilter");
+    if(!itemSelect) return;
+    const currentValue = itemSelect.value || "all";
+    itemSelect.innerHTML = '<option value="all">All Items</option>' + regulatoryTableItemConfig.map(item => `<option value="${item.key}">${item.label}</option>`).join('');
+    itemSelect.value = regulatoryTableItemConfig.some(item => item.key === currentValue) ? currentValue : "all";
+  }
+
+  function getRegulatoryTableCompanies() {
+    const filter = document.getElementById("regulatoryTableCompanyFilter")?.value || "active";
+    if(filter === "active") return getSelectedCompanies();
+    if(filter === "Industry") return companies;
+    return [filter];
+  }
+
+  function getRegulatoryTableItems() {
+    const filter = document.getElementById("regulatoryTableItemFilter")?.value || "all";
+    if(filter === "all") return regulatoryTableItemConfig;
+    return regulatoryTableItemConfig.filter(item => item.key === filter);
+  }
+
+  function getRegulatoryTableYears(dashboardSelectedYear) {
+    const filter = document.getElementById("regulatoryTableYearFilter")?.value || "dashboard";
+    if(filter === "all") return regulatoryYearsList;
+    if(filter !== "dashboard") {
+      const y = parseInt(filter);
+      return isNaN(y) ? [] : [y];
+    }
+    return dashboardSelectedYear === "all" ? regulatoryYearsList : getRegulatorySelectedYears(dashboardSelectedYear);
+  }
+
+  function formatRegulatoryTableValue(value, type) {
+    return type === "percent" ? formatPercent(normalizeRatioValue(value)) : formatMoney(value);
+  }
+
+  function buildRegulatoryIndustryValue(year, item) {
+    if(item.type === "money") return companies.reduce((sum, comp) => sum + Number(item.get(year, comp) || 0), 0);
+    const fees = companies.reduce((sum, comp) => sum + (regulatoryData[year]?.[comp]?.paymentReceived || 0), 0);
+    const revenue = companies.reduce((sum, comp) => sum + (financialData[year]?.[comp]?.revenue || 0), 0);
+    return revenue ? fees / revenue : 0;
+  }
+
+
+  function buildMarketSharePayload(marketShare, years) {
+    return { version: 2, savedAt: new Date().toISOString(), marketShare, years };
+  }
+
+  function deriveMetricShareFromFinancial(metricKey) {
+    const derived = {};
+    yearsList.forEach(y => {
+      let total = 0;
+      companies.forEach(comp => {
+        if(metricKey === "enterprise") total += getEnterpriseValue(y, comp) || 0;
+        else total += financialData[y]?.[comp]?.[marketShareMetricConfig[metricKey]?.fallbackField || "revenue"] || 0;
+      });
+      derived[y] = {};
+      companies.forEach(comp => {
+        let value = 0;
+        if(metricKey === "enterprise") value = getEnterpriseValue(y, comp) || 0;
+        else value = financialData[y]?.[comp]?.[marketShareMetricConfig[metricKey]?.fallbackField || "revenue"] || 0;
+        derived[y][comp] = total ? value / total : 0;
+      });
+    });
+    return derived;
+  }
+
+  function deriveMarketShareFromFinancial() {
+    return {
+      revenue: deriveMetricShareFromFinancial("revenue"),
+      profitability: deriveMetricShareFromFinancial("profitability"),
+      enterprise: deriveMetricShareFromFinancial("enterprise")
+    };
+  }
+
+  function normalizeMarketSharePayload(payload) {
+    if(!payload || !payload.marketShare) return null;
+    const source = payload.marketShare;
+    // Version 1 dashboards stored only revenue share as {year:{company:value}}.
+    const isLegacyFlat = Object.keys(source).some(k => /^\d{4}$/.test(String(k)));
+    if(isLegacyFlat) {
+      return {
+        version: 2,
+        savedAt: payload.savedAt || new Date().toISOString(),
+        marketShare: {
+          revenue: source,
+          profitability: DEFAULT_MARKET_SHARE_PAYLOAD?.marketShare?.profitability || deriveMetricShareFromFinancial("profitability"),
+          enterprise: DEFAULT_MARKET_SHARE_PAYLOAD?.marketShare?.enterprise || deriveMetricShareFromFinancial("enterprise")
+        },
+        years: payload.years || yearsList
+      };
+    }
+    return payload;
+  }
+
+  function applyMarketSharePayload(payload) {
+    const normalized = normalizeMarketSharePayload(payload);
+    if(!normalized || !normalized.marketShare || !normalized.years) {
+      marketShareData = deriveMarketShareFromFinancial();
+      marketShareYearsList = [...yearsList];
+    } else {
+      marketShareData = normalized.marketShare || {};
+      marketShareYearsList = (normalized.years || []).map(Number).sort((a,b)=>a-b);
+    }
+    const selectedYear = document.getElementById("yearSelect")?.value || "all";
+    renderMarketShareAnalytics(selectedYear);
+    return true;
+  }
+
+  function saveMarketSharePayload(payload) {
+    try {
+      localStorage.setItem(MARKET_SHARE_CACHE_KEY, JSON.stringify(payload));
+    } catch(err) {
+      console.warn("Market share values were loaded but could not be stored in browser localStorage.", err);
+    }
+  }
+
+  function loadMarketSharePayload() {
+    try {
+      const raw = localStorage.getItem(MARKET_SHARE_CACHE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch(err) {
+      console.warn("Could not load saved market share snapshot.", err);
+      return null;
+    }
+  }
+
+  function getMarketShareSelectedYears(selectedYear) {
+    const availableYears = marketShareYearsList.length ? marketShareYearsList : yearsList;
+    if(!availableYears || availableYears.length === 0) return [];
+    if(selectedYear === "all") return availableYears;
+    const y = parseInt(selectedYear);
+    return isNaN(y) ? availableYears : [y];
+  }
+
+  function getActiveMarketShareMetricConfig() {
+    return marketShareMetricConfig[activeMarketShareMetric] || marketShareMetricConfig.revenue;
+  }
+
+  function getMarketShareValue(year, comp, metricKey = activeMarketShareMetric) {
+    const metricData = marketShareData?.[metricKey];
+    const stored = metricData?.[year]?.[comp];
+    if(stored !== undefined && stored !== null && !isNaN(Number(stored))) return Number(stored);
+
+    // Backward compatibility for old flat revenue-only cache.
+    const legacyStored = marketShareData?.[year]?.[comp];
+    if(metricKey === "revenue" && legacyStored !== undefined && legacyStored !== null && !isNaN(Number(legacyStored))) return Number(legacyStored);
+
+    let total = 0;
+    companies.forEach(c => {
+      if(metricKey === "enterprise") total += getEnterpriseValue(year, c) || 0;
+      else total += financialData[year]?.[c]?.[marketShareMetricConfig[metricKey]?.fallbackField || "revenue"] || 0;
+    });
+    let value = 0;
+    if(metricKey === "enterprise") value = getEnterpriseValue(year, comp) || 0;
+    else value = financialData[year]?.[comp]?.[marketShareMetricConfig[metricKey]?.fallbackField || "revenue"] || 0;
+    return total ? value / total : 0;
+  }
+
+  function getMarketShareTableCompanies() {
+    const filter = document.getElementById("marketShareTableCompanyFilter")?.value || "active";
+    if(filter === "active") return getSelectedCompanies();
+    if(filter === "Industry") return companies;
+    return [filter];
+  }
+
+  function getMarketShareTableYears(dashboardSelectedYear) {
+    const filter = document.getElementById("marketShareTableYearFilter")?.value || "dashboard";
+    const availableYears = marketShareYearsList.length ? marketShareYearsList : yearsList;
+    if(filter === "all") return availableYears;
+    if(filter !== "dashboard") {
+      const y = parseInt(filter);
+      return isNaN(y) ? [] : [y];
+    }
+    return dashboardSelectedYear === "all" ? availableYears : [parseInt(dashboardSelectedYear)];
+  }
+
+  function populateMarketShareTableYearFilter() {
+    const yearSelect = document.getElementById("marketShareTableYearFilter");
+    if(!yearSelect) return;
+    const currentValue = yearSelect.value || "dashboard";
+    const availableYears = marketShareYearsList.length ? marketShareYearsList : yearsList;
+    let options = '<option value="dashboard">Dashboard Year Selection</option><option value="all">All Years</option>';
+    availableYears.forEach(y => { options += `<option value="${y}">${y}</option>`; });
+    yearSelect.innerHTML = options;
+    if(currentValue === "dashboard" || currentValue === "all" || availableYears.map(String).includes(String(currentValue))) yearSelect.value = currentValue;
+    else yearSelect.value = "dashboard";
+  }
+
+  function buildMarketShareTable(selectedYear) {
+    populateMarketShareTableYearFilter();
+    const container = document.getElementById("marketShareTableContainer");
+    if(!container) return;
+    const selectedYears = getMarketShareTableYears(selectedYear);
+    const tableCompanies = getMarketShareTableCompanies();
+    const cfg = getActiveMarketShareMetricConfig();
+    if(!selectedYears.length || !tableCompanies.length) {
+      container.innerHTML = '<div class="empty-table-note">No market share data available for the selected filter.</div>';
+      return;
+    }
+    const headerHtml = `<tr><th>Year</th><th>Market Share Item</th>${tableCompanies.map(c => `<th style="color:${companyColors[c] || "#5DE4C7"};">${c}</th>`).join('')}</tr>`;
+    let bodyHtml = "";
+    selectedYears.forEach(y => {
+      const valuesHtml = tableCompanies.map(c => `<td>${formatPercent(getMarketShareValue(y, c))}</td>`).join('');
+      bodyHtml += `<tr><td style="font-weight:900; color:#5DE4C7;"><i class="fas fa-calendar-alt"></i> ${y}</td><td class="item-name">${cfg.label}</td>${valuesHtml}</tr>`;
+      if(tableCompanies.length > 1) {
+        const industryTotal = tableCompanies.reduce((sum, c) => sum + getMarketShareValue(y, c), 0);
+        bodyHtml += `<tr class="year-group-row"><td style="font-weight:900; color:#5DE4C7;"><i class="fas fa-layer-group"></i> ${y}</td><td>Industry Total - ${cfg.label}</td><td colspan="${tableCompanies.length}">${formatPercent(industryTotal)}</td></tr>`;
+      }
+    });
+    container.innerHTML = `<table><thead>${headerHtml}</thead><tbody>${bodyHtml}</tbody></table>`;
+  }
+
+  function renderMarketShareAnalytics(selectedYear) {
+    const status = document.getElementById("marketShareStatus");
+    const trendCanvas = document.getElementById("marketShareTrendChart");
+    const distributionCanvas = document.getElementById("marketShareDistributionChart");
+    const tableContainer = document.getElementById("marketShareTableContainer");
+    if(!trendCanvas || !distributionCanvas) return;
+
+    const availableYears = marketShareYearsList.length ? marketShareYearsList : yearsList;
+    if(!availableYears || availableYears.length === 0) {
+      if(status) status.textContent = "Upload the financial workbook to activate market share analytics.";
+      if(tableContainer) tableContainer.innerHTML = '<div class="empty-table-note">No market share data loaded yet.</div>';
+      if(charts.marketShareTrendChart) charts.marketShareTrendChart.destroy();
+      if(charts.marketShareDistributionChart) charts.marketShareDistributionChart.destroy();
+      return;
+    }
+
+    const cfg = getActiveMarketShareMetricConfig();
+    const activeCompanies = getSelectedCompanies();
+    const selectedYears = getMarketShareSelectedYears(selectedYear);
+    const latestYear = selectedYear === "all" ? Math.max(...selectedYears) : selectedYears[0];
+    const scopeText = selectedYear === "all" ? `${Math.min(...selectedYears)}–${Math.max(...selectedYears)}` : `${latestYear}`;
+    const leader = activeCompanies.map(comp => ({ comp, value: getMarketShareValue(latestYear, comp) })).sort((a,b)=>b.value-a.value)[0];
+
+    if(status) status.innerHTML = `${cfg.label} data loaded from the workbook MARKET SHARE section for <strong>${availableYears[0]}–${availableYears[availableYears.length-1]}</strong>. Current scope: <strong>${scopeText}</strong>. ${leader ? `Leading operator in ${latestYear}: <strong>${leader.comp}</strong> with <strong>${formatPercent(leader.value)}</strong>.` : ""}`;
+
+    const trendTitle = document.querySelector("#marketSharePanel .chart-card .chart-header h3");
+    if(trendTitle) trendTitle.textContent = `${cfg.label} Trend`;
+
+    const trendLabels = availableYears.map(y => y.toString());
+    const trendDatasets = activeCompanies.map(comp => ({
+      label: `${comp} ${cfg.label}`,
+      data: availableYears.map(y => getMarketShareValue(y, comp) * 100),
+      borderColor: companyColors[comp],
+      backgroundColor: "transparent",
+      fill: false,
+      tension: 0.2
+    }));
+    if(charts.marketShareTrendChart) charts.marketShareTrendChart.destroy();
+    const yScale = { title: { display: true, text: `${cfg.label} (%)`, color: "#FFD966" } };
+    if(cfg.forceZeroToHundredAxis) { yScale.min = 0; yScale.max = 100; }
+    charts.marketShareTrendChart = new Chart(trendCanvas, { type: "line", data: { labels: trendLabels, datasets: trendDatasets }, options: { responsive: true, scales: { y: yScale } } });
+
+    const distributionTitle = document.getElementById("marketShareDistributionTitle");
+    if(distributionTitle) distributionTitle.innerHTML = `${cfg.label} Distribution - ${latestYear}`;
+    const distributionLabels = activeCompanies;
+    const distributionData = activeCompanies.map(comp => getMarketShareValue(latestYear, comp) * 100);
+    if(charts.marketShareDistributionChart) charts.marketShareDistributionChart.destroy();
+    charts.marketShareDistributionChart = new Chart(distributionCanvas, { type: activeCompanies.length > 1 ? "doughnut" : "bar", data: { labels: distributionLabels, datasets: [{ label: `${cfg.label} ${latestYear} (%)`, data: distributionData, backgroundColor: activeCompanies.map(c => companyColors[c]) }] }, options: { responsive: true } });
+
+    buildMarketShareTable(selectedYear);
+  }
+
+  function buildRegulatoryFeeTable(selectedYear) {
+    populateRegulatoryTableYearFilter();
+    populateRegulatoryTableItemFilter();
+    const container = document.getElementById("regulatoryTableContainer");
+    if(!container) return;
+    if(!regulatoryYearsList || regulatoryYearsList.length === 0) {
+      container.innerHTML = '<div class="empty-table-note">No regulatory fee workbook loaded yet.</div>';
+      return;
+    }
+
+    const tableCompanies = getRegulatoryTableCompanies();
+    const tableItems = getRegulatoryTableItems();
+    const selectedYears = getRegulatoryTableYears(selectedYear);
+    if(!selectedYears.length || !tableItems.length || !tableCompanies.length) {
+      container.innerHTML = '<div class="empty-table-note">Select a table year, company, and item to view regulatory fee records.</div>';
+      return;
+    }
+
+    const headerHtml = `<tr><th>Year</th><th>Regulatory Fee Item</th>${tableCompanies.map(c => `<th style="color:${companyColors[c] || "#5DE4C7"};">${c}</th>`).join('')}</tr>`;
+    let bodyHtml = "";
+
+    selectedYears.forEach(y => {
+      tableItems.forEach((item, itemIndex) => {
+        const yearCell = itemIndex === 0 ? `<td rowspan="${tableItems.length}" style="font-weight:900; color:#5DE4C7;"><i class="fas fa-calendar-alt"></i> ${y}</td>` : "";
+        const valuesHtml = tableCompanies.map(c => `<td>${formatRegulatoryTableValue(item.get(y, c), item.type)}</td>`).join('');
+        bodyHtml += `<tr>${yearCell}<td class="item-name">${item.label}</td>${valuesHtml}</tr>`;
+      });
+      if(tableCompanies.length > 1) {
+        tableItems.forEach((item, itemIndex) => {
+          const yearCell = itemIndex === 0 ? `<td rowspan="${tableItems.length}" style="font-weight:900; color:#5DE4C7;"><i class="fas fa-layer-group"></i> ${y}</td>` : "";
+          bodyHtml += `<tr class="year-group-row">${yearCell}<td>Industry Total - ${item.label}</td><td colspan="${tableCompanies.length}">${formatRegulatoryTableValue(buildRegulatoryIndustryValue(y, item), item.type)}</td></tr>`;
+        });
+      }
+    });
+
+    container.innerHTML = `<table><thead>${headerHtml}</thead><tbody>${bodyHtml}</tbody></table>`;
+  }
+
+  function renderRegulatoryFeeAnalytics(selectedYear) {
+    const status = document.getElementById("regulatoryStatus");
+    const tableContainer = document.getElementById("regulatoryTableContainer");
+    const feeCanvas = document.getElementById("regulatoryFeeChart");
+    const rateCanvas = document.getElementById("regulatoryFeeRateChart");
+    if(!feeCanvas || !rateCanvas) return;
+
+    if(!regulatoryYearsList || regulatoryYearsList.length === 0) {
+      if(status) status.textContent = "Upload the regulatory fee workbook to activate regulatory fee analytics. The financial workbook can remain separate.";
+      if(tableContainer) tableContainer.innerHTML = '<div class="empty-table-note">No regulatory fee workbook loaded yet.</div>';
+      if(charts.regulatoryFeeChart) charts.regulatoryFeeChart.destroy();
+      if(charts.regulatoryFeeRateChart) charts.regulatoryFeeRateChart.destroy();
+      return;
+    }
+
+    recalculateRegulatoryFeeRates();
+    const activeCompanies = getSelectedCompanies();
+    const selectedYears = getRegulatorySelectedYears(selectedYear);
+    const scopeText = selectedYear === "all" ? `${Math.min(...selectedYears)}–${Math.max(...selectedYears)}` : `${selectedYears[0]}`;
+    const totalReceived = selectedYears.reduce((sum, y) => sum + activeCompanies.reduce((s, c) => s + (regulatoryData[y]?.[c]?.paymentReceived || 0), 0), 0);
+    const totalRevenue = selectedYears.reduce((sum, y) => sum + activeCompanies.reduce((s, c) => s + (financialData[y]?.[c]?.revenue || 0), 0), 0);
+    const effectiveRate = totalRevenue ? totalReceived / totalRevenue : 0;
+
+    if(status) status.innerHTML = `Regulatory fee workbook loaded for <strong>${regulatoryYearsList[0]}–${regulatoryYearsList[regulatoryYearsList.length-1]}</strong>. Current scope: <strong>${scopeText}</strong>. Total received: <strong>${formatMoney(totalReceived)}</strong>. Effective received fee-to-revenue rate: <strong>${formatPercent(effectiveRate)}</strong>.`;
+
+    let feeLabels, feeDatasets, rateLabels, rateDatasets;
+    if(selectedYear === "all") {
+      feeLabels = selectedYears.map(y => y.toString());
+      feeDatasets = activeCompanies.map(comp => ({ label: `${comp} Fees Received`, data: selectedYears.map(y => (regulatoryData[y]?.[comp]?.paymentReceived || 0) / 1e6), borderColor: companyColors[comp], backgroundColor: "transparent", fill: false, tension: 0.2 }));
+      if(activeCompanies.length > 1) feeDatasets.unshift({ label: "Industry Fees Received", data: selectedYears.map(y => activeCompanies.reduce((sum, comp) => sum + (regulatoryData[y]?.[comp]?.paymentReceived || 0), 0) / 1e6), borderColor: "#5DE4C7", backgroundColor: "transparent", borderWidth: 4, fill: false, tension: 0.2 });
+
+      rateLabels = selectedYears.map(y => y.toString());
+      rateDatasets = activeCompanies.map(comp => ({ label: `${comp} Fee / Revenue %`, data: selectedYears.map(y => (regulatoryData[y]?.[comp]?.feeToRevenue || 0) * 100), borderColor: companyColors[comp], backgroundColor: "transparent", fill: false, tension: 0.2 }));
+      if(activeCompanies.length > 1) rateDatasets.unshift({ label: "Industry Fee / Revenue %", data: selectedYears.map(y => {
+        const fees = activeCompanies.reduce((sum, comp) => sum + (regulatoryData[y]?.[comp]?.paymentReceived || 0), 0);
+        const rev = activeCompanies.reduce((sum, comp) => sum + (financialData[y]?.[comp]?.revenue || 0), 0);
+        return rev ? (fees / rev) * 100 : 0;
+      }), borderColor: "#5DE4C7", backgroundColor: "transparent", borderWidth: 4, fill: false, tension: 0.2 });
+    } else {
+      const y = selectedYears[0];
+      feeLabels = activeCompanies;
+      feeDatasets = [
+        { label: "Payment Received (GHS M)", data: activeCompanies.map(c => (regulatoryData[y]?.[c]?.paymentReceived || 0) / 1e6), backgroundColor: activeCompanies.map(c => companyColors[c]) },
+        { label: "Invoice Issued (GHS M)", data: activeCompanies.map(c => (regulatoryData[y]?.[c]?.invoiceIssued || 0) / 1e6), backgroundColor: activeCompanies.map(c => companyColors[c] + "80") }
+      ];
+
+      rateLabels = activeCompanies;
+      rateDatasets = [{ label: "Fee Received / Revenue %", data: activeCompanies.map(c => (regulatoryData[y]?.[c]?.feeToRevenue || 0) * 100), backgroundColor: activeCompanies.map(c => companyColors[c]) }];
+    }
+
+    if(charts.regulatoryFeeChart) charts.regulatoryFeeChart.destroy();
+    charts.regulatoryFeeChart = new Chart(feeCanvas, { type: selectedYear === "all" ? "line" : "bar", data: { labels: feeLabels, datasets: feeDatasets }, options: { responsive: true, scales: { y: { title: { display: true, text: "GHS Millions", color: "#FFD966" } } } } });
+
+    if(charts.regulatoryFeeRateChart) charts.regulatoryFeeRateChart.destroy();
+    charts.regulatoryFeeRateChart = new Chart(rateCanvas, { type: selectedYear === "all" ? "line" : "bar", data: { labels: rateLabels, datasets: rateDatasets }, options: { responsive: true, scales: { y: { title: { display: true, text: "% of Revenue", color: "#FFD966" } } } } });
+
+    buildRegulatoryFeeTable(selectedYear);
+  }
+
+  async function handleRegulatoryExcelUpload(file) {
+    try {
+      const { regulatory, years } = await parseRegulatoryFeeWorkbook(file);
+      const payload = buildRegulatoryPayload(regulatory, years);
+      saveRegulatoryPayload(payload);
+      applyRegulatoryPayload(payload, true);
+      const output = document.getElementById("predictionOutput");
+      if(output) output.innerHTML = `✅ Regulatory fee workbook captured. It now works together with the financial workbook for fee-to-revenue analytics.`;
+    } catch(err) {
+      alert("Error parsing regulatory fee workbook: " + (err.message || err));
+      console.error(err);
+    }
+  }
+
+
+  // ---------- Rendering all UI (same logic as before but using dynamic data) ----------
+  function updateKPI(selectedYear) {
+    const kpiContainer = document.getElementById("kpiContainer");
+    if(!kpiContainer) return;
+    const activeCompanies = getSelectedCompanies();
+    let kpis = [];
+    if(selectedYear === "all") {
+      let total = { MTN:0, Telecel:0, AT:0 };
+      yearsList.forEach(y => {
+        activeCompanies.forEach(c => { total[c] += financialData[y]?.[c]?.revenue || 0; });
+      });
+      kpis = activeCompanies.map(c => ({ title: `${c} Total Revenue`, value: formatMoney(total[c]), sub: "All years sum", color: companyColors[c] }));
+      if(activeCompanies.length > 1) {
+        kpis.push({ title: "Market Size", value: formatMoney(activeCompanies.reduce((a,c)=>a+total[c],0)), sub: `${yearsList.length} years`, color: "#5DE4C7" });
+      }
+    } else {
+      const yd = financialData[selectedYear];
+      if(yd) {
+        activeCompanies.forEach(c => {
+          const d = yd[c];
+          kpis.push({ title: `${c} ${selectedYear} Revenue`, value: formatMoney(d?.revenue), sub: `Net Profit: ${formatMoney(d?.netProfit)} | Margin: ${formatPercent(d?.margin||0)}`, color: companyColors[c] });
+        });
+        if(activeCompanies.length > 1) {
+          const tot = activeCompanies.reduce((a,c)=> a + (yd[c]?.revenue||0), 0);
+          kpis.push({ title: "Industry Total Revenue", value: formatMoney(tot), sub: `${selectedYear}`, color: "#5DE4C7" });
+        }
+      }
+    }
+    kpiContainer.innerHTML = kpis.map(k => `<div class="kpi-card"><div class="kpi-title" style="color:${k.color}">${k.title}</div><div class="kpi-value">${k.value}</div><div class="kpi-sub">${k.sub}</div></div>`).join('');
+  }
+
+  function renderAllCharts(selectedYear) {
+    if(!yearsList || yearsList.length === 0) return;
+    const isAll = (selectedYear === "all");
+    const activeCompanies = getSelectedCompanies();
+    // 1. YoY Growth
+    let yoyLabels = [], yoyDatasets = [];
+    if(isAll) {
+      const yoyYears = yearsList.filter(y => y > Math.min(...yearsList));
+      yoyLabels = yoyYears.map(y=>y.toString());
+      activeCompanies.forEach(comp => {
+        let data = yoyYears.map(y => {
+          const prev = financialData[y-1]?.[comp]?.revenue;
+          const curr = financialData[y]?.[comp]?.revenue;
+          if(prev && curr && prev!==0) return ((curr-prev)/prev)*100;
+          return null;
+        });
+        yoyDatasets.push({ label: `${comp} YoY Rev %`, data, borderColor: companyColors[comp], backgroundColor: "transparent", tension: 0.2, fill: false });
+      });
+    } else {
+      const curr = parseInt(selectedYear);
+      if(curr > Math.min(...yearsList)) {
+        yoyLabels = activeCompanies;
+        yoyDatasets = [{ label: `YoY Revenue Growth % (${selectedYear} vs ${curr-1})`, data: activeCompanies.map(c => { const prev = financialData[curr-1]?.[c]?.revenue; const cur = financialData[curr]?.[c]?.revenue; if(prev && cur && prev!==0) return ((cur-prev)/prev)*100; return 0; }), backgroundColor: activeCompanies.map(c=>companyColors[c]) }];
+      } else { yoyLabels = activeCompanies; yoyDatasets = [{ label: "No prior year", data: activeCompanies.map(()=>0), backgroundColor: "#95A5A6" }]; }
+    }
+    if(charts.yoyChart) charts.yoyChart.destroy();
+    charts.yoyChart = new Chart(document.getElementById("yoyChart"), { type: isAll ? 'line' : 'bar', data: { labels: yoyLabels, datasets: yoyDatasets }, options: { responsive: true } });
+
+    // 2. Profitability Analysis
+    let profitLabels, profitDatasets;
+    const profitCfg = profitMetricConfig[activeProfitMetric] || profitMetricConfig.netProfit;
+    const profitabilityTitle = document.getElementById("profitabilityTitle");
+    if(profitabilityTitle) profitabilityTitle.innerHTML = `📊 Profitability Analysis - ${profitCfg.label}`;
+    if(isAll) {
+      profitLabels = yearsList.map(y=>y.toString());
+      profitDatasets = activeCompanies.map(comp => ({ label: `${comp} ${profitCfg.label}`, data: yearsList.map(y=> getProfitChartDisplayValue(y, comp, activeProfitMetric)), borderColor: companyColors[comp], backgroundColor: "transparent", fill: false, tension: 0.2 }));
+    } else {
+      profitLabels = activeCompanies;
+      profitDatasets = [{ label: profitCfg.type === "money" ? `${profitCfg.label} (GHS M)` : `${profitCfg.label} (%)`, data: activeCompanies.map(c=> getProfitChartDisplayValue(selectedYear, c, activeProfitMetric)), backgroundColor: activeCompanies.map(c=>companyColors[c]) }];
+    }
+    if(charts.profitChart) charts.profitChart.destroy();
+    charts.profitChart = new Chart(document.getElementById("profitAnalysisChart"), { type: isAll ? 'line' : 'bar', data: { labels: profitLabels, datasets: profitDatasets }, options: { responsive: true, scales: { y: { title: { display: true, text: getProfitAxisLabel(activeProfitMetric), color: "#FFD966" } } } } });
+
+    // 3. Benchmark (latest year or selected)
+    const benchYear = isAll ? Math.max(...yearsList) : parseInt(selectedYear);
+    const benchLabels = activeCompanies;
+    const benchDatasets = [
+      { label: "Revenue (GHS M)", data: activeCompanies.map(c=> (financialData[benchYear]?.[c]?.revenue||0)/1e6), backgroundColor: activeCompanies.map(c=>companyColors[c]) },
+      { label: "EBITDA (GHS M)", data: activeCompanies.map(c=> (financialData[benchYear]?.[c]?.ebitda||0)/1e6), backgroundColor: activeCompanies.map(c=>companyColors[c]+"CC") },
+      { label: "Net Profit (GHS M)", data: activeCompanies.map(c=> (financialData[benchYear]?.[c]?.netProfit||0)/1e6), backgroundColor: activeCompanies.map(c=>companyColors[c]+"99") }
+    ];
+    if(charts.benchChart) charts.benchChart.destroy();
+    charts.benchChart = new Chart(document.getElementById("benchmarkChart"), { type: 'bar', data: { labels: benchLabels, datasets: benchDatasets }, options: { responsive: true, scales: { y: { title: { display: true, text: "GHS Millions", color: "#FFD966" } } } } });
+
+    // 4. Enterprise Value
+    let evLabels, evDatasets;
+    if(isAll) {
+      evLabels = yearsList.map(y=>y.toString());
+      evDatasets = activeCompanies.map(comp => ({ label: comp, data: yearsList.map(y=> getEnterpriseValue(y, comp)/1e6), borderColor: companyColors[comp], backgroundColor: "transparent", fill: false, tension: 0.2 }));
+    } else {
+      evLabels = activeCompanies;
+      evDatasets = [{ label: `Enterprise Value (GHS M) - ${selectedYear}`, data: activeCompanies.map(c=> getEnterpriseValue(parseInt(selectedYear), c)/1e6), backgroundColor: activeCompanies.map(c=>companyColors[c]) }];
+    }
+    if(charts.evChart) charts.evChart.destroy();
+    charts.evChart = new Chart(document.getElementById("evChart"), { type: isAll ? 'line' : 'bar', data: { labels: evLabels, datasets: evDatasets }, options: { responsive: true } });
+
+    // 5. Assets vs Liabilities
+    let assetsLabels, assetsDatasets;
+    const industryAssetData = yearsList.map(y => companies.reduce((sum, comp) => sum + (financialData[y]?.[comp]?.totalAssets || 0), 0) / 1e6);
+    const industryLiabilityData = yearsList.map(y => companies.reduce((sum, comp) => sum + (liabilitiesData[y]?.[comp] || 0), 0) / 1e6);
+    if(isAll) {
+      assetsLabels = yearsList.map(y=>y.toString());
+      let ds = [
+        { label: "Industry Total Assets", data: industryAssetData, borderColor: "#5DE4C7", backgroundColor: "transparent", borderWidth: 4, fill: false, tension: 0.2 },
+        { label: "Industry Total Liabilities", data: industryLiabilityData, borderColor: "#FFFFFF", backgroundColor: "transparent", borderWidth: 4, borderDash: [8,4], fill: false, tension: 0.2 }
+      ];
+      activeCompanies.forEach(comp => {
+        ds.push({ label: `${comp} Assets`, data: yearsList.map(y=> (financialData[y]?.[comp]?.totalAssets||0)/1e6), borderColor: companyColors[comp], backgroundColor: "transparent", fill: false, tension: 0.2 });
+        ds.push({ label: `${comp} Liabilities`, data: yearsList.map(y=> (liabilitiesData[y]?.[comp]||0)/1e6), borderColor: companyColors[comp], backgroundColor: "transparent", borderDash: [5,5], fill: false, tension: 0.2 });
+      });
+      assetsDatasets = ds;
+    } else {
+      const industryAssetsForYear = companies.reduce((sum, comp) => sum + (financialData[selectedYear]?.[comp]?.totalAssets || 0), 0) / 1e6;
+      const industryLiabilitiesForYear = companies.reduce((sum, comp) => sum + (liabilitiesData[selectedYear]?.[comp] || 0), 0) / 1e6;
+      assetsLabels = activeCompanies;
+      assetsDatasets = [
+        { label: "Total Assets", type: "bar", data: activeCompanies.map(c=> (financialData[selectedYear]?.[c]?.totalAssets||0)/1e6), backgroundColor: activeCompanies.map(c=>companyColors[c]) },
+        { label: "Total Liabilities", type: "bar", data: activeCompanies.map(c=> (liabilitiesData[selectedYear]?.[c]||0)/1e6), backgroundColor: activeCompanies.map(c=>companyColors[c]+"80") },
+        { label: "Industry Total Assets", type: "line", data: activeCompanies.map(()=>industryAssetsForYear), borderColor: "#5DE4C7", backgroundColor: "transparent", borderWidth: 4, pointRadius: 4, fill: false },
+        { label: "Industry Total Liabilities", type: "line", data: activeCompanies.map(()=>industryLiabilitiesForYear), borderColor: "#FFFFFF", backgroundColor: "transparent", borderWidth: 4, borderDash: [8,4], pointRadius: 4, fill: false }
+      ];
+    }
+    if(charts.assetsChart) charts.assetsChart.destroy();
+    charts.assetsChart = new Chart(document.getElementById("assetsLiabChart"), { type: isAll ? 'line' : 'bar', data: { labels: assetsLabels, datasets: assetsDatasets }, options: { responsive: true, scales: { y: { title: { display: true, text: "GHS Millions", color: "#FFD966" } } } } });
+
+    // 6. Consolidated Financial Trend Analysis
+    renderTrendAnalysisChart();
+
+    // Re-render main two charts
+    renderMainCharts(selectedYear);
+    buildFinancialTable(selectedYear);
+    renderMarketShareAnalytics(selectedYear);
+    updateInsightsPanel(selectedYear);
+    renderRegulatoryFeeAnalytics(selectedYear);
+  }
+
+  function getChartData(selectedYear) {
+    const activeCompanies = getSelectedCompanies();
+    if(selectedYear === "all") {
+      return { labels: yearsList.map(y=>y.toString()), datasets: activeCompanies.map(c => ({ label: `${c} Revenue`, data: yearsList.map(y=>financialData[y]?.[c]?.revenue||0), borderColor: companyColors[c], backgroundColor: "transparent", tension: 0.2, fill: false })) };
+    } else {
+      const yd = financialData[selectedYear];
+      return { labels: activeCompanies, datasets: [
+        { label: "Revenue", data: activeCompanies.map(c=>yd?.[c]?.revenue||0), backgroundColor: activeCompanies.map(c=>companyColors[c]) },
+        { label: "EBITDA", data: activeCompanies.map(c=>yd?.[c]?.ebitda||0), backgroundColor: activeCompanies.map(c=>companyColors[c]+"CC") }
+      ] };
+    }
+  }
+  function getMarginChartData(selectedYear) {
+    const activeCompanies = getSelectedCompanies();
+    if(selectedYear === "all") {
+      return { labels: yearsList.map(y=>y.toString()), datasets: activeCompanies.map(c => ({ label: `${c} Net Margin %`, data: yearsList.map(y=>getSafeRatio(y, c, "margin", "netProfit")*100), borderColor: companyColors[c], backgroundColor: "transparent", tension: 0.2, fill: false })) };
+    } else {
+      const yd = financialData[selectedYear];
+      return { labels: activeCompanies, datasets: [{ label: "Net Margin %", data: activeCompanies.map(c=>getSafeRatio(selectedYear, c, "margin", "netProfit")*100), backgroundColor: activeCompanies.map(c=>companyColors[c]) }] };
+    }
+  }
+  let mainChart;
+  function renderMainCharts(selectedYear) {
+    if(mainChart) mainChart.destroy();
+    mainChart = new Chart(document.getElementById("mainChart"), { type: selectedYear==="all"?'line':'bar', data: getChartData(selectedYear), options: { responsive: true } });
+  }
+
+
+  const tableItemConfig = [
+    { key: "revenue", label: "Revenue", type: "money", get: (y, c) => financialData[y]?.[c]?.revenue || 0 },
+    { key: "ebitda", label: "EBITDA", type: "money", get: (y, c) => financialData[y]?.[c]?.ebitda || 0 },
+    { key: "netProfit", label: "Net Profit", type: "money", get: (y, c) => financialData[y]?.[c]?.netProfit || 0 },
+    { key: "netProfitMargin", label: "Net Profit Margin", type: "percent", get: (y, c) => getSafeRatio(y, c, "margin", "netProfit") },
+    { key: "grossProfit", label: "Gross Profit", type: "money", get: (y, c) => financialData[y]?.[c]?.grossProfit || 0 },
+    { key: "grossProfitMargin", label: "Gross Profit Margin", type: "percent", get: (y, c) => getSafeRatio(y, c, "grossProfitMargin", "grossProfit") },
+    { key: "returnOnInvestment", label: "Return on Investment", type: "percent", get: (y, c) => getSafeRatio(y, c, "returnOnInvestment", "netProfit", "totalAssets") },
+    { key: "operatingExpense", label: "Operating Expense", type: "money", get: (y, c) => getOperatingExpense(y, c) },
+    { key: "totalAssets", label: "Total Assets", type: "money", get: (y, c) => financialData[y]?.[c]?.totalAssets || 0 },
+    { key: "liabilities", label: "Total Liabilities", type: "money", get: (y, c) => liabilitiesData[y]?.[c] || 0 },
+    { key: "totalDebt", label: "Total Debt", type: "money", get: (y, c) => financialData[y]?.[c]?.totalDebt || 0 },
+    { key: "cash", label: "Cash and Cash Equivalents", type: "money", get: (y, c) => cashData[y]?.[c] || 0 },
+    { key: "enterpriseValue", label: "Enterprise Value", type: "money", get: (y, c) => getEnterpriseValue(y, c) }
+  ];
+
+  function populateTableYearFilter() {
+    const yearSelect = document.getElementById("tableYearFilter");
+    if(!yearSelect) return;
+    const currentValue = yearSelect.value || "dashboard";
+    let options = '<option value="dashboard">Dashboard Year Selection</option><option value="all">All Years</option>';
+    yearsList.forEach(y => { options += `<option value="${y}">${y}</option>`; });
+    yearSelect.innerHTML = options;
+    if(currentValue === "dashboard" || currentValue === "all" || yearsList.map(String).includes(String(currentValue))) {
+      yearSelect.value = currentValue;
+    } else {
+      yearSelect.value = "dashboard";
+    }
+  }
+
+  function populateTableItemFilter() {
+    const itemSelect = document.getElementById("tableItemFilter");
+    if(!itemSelect) return;
+    const currentValue = itemSelect.value || "all";
+    itemSelect.innerHTML = '<option value="all">All Items</option>' + tableItemConfig.map(item => `<option value="${item.key}">${item.label}</option>`).join('');
+    itemSelect.value = tableItemConfig.some(item => item.key === currentValue) ? currentValue : "all";
+  }
+
+  function getTableCompanies() {
+    const filter = document.getElementById("tableCompanyFilter")?.value || "active";
+    if(filter === "active") return getSelectedCompanies();
+    if(filter === "Industry") return companies;
+    return [filter];
+  }
+
+  function getTableItems() {
+    const filter = document.getElementById("tableItemFilter")?.value || "all";
+    if(filter === "all") return tableItemConfig;
+    return tableItemConfig.filter(item => item.key === filter);
+  }
+
+  function getTableYears(dashboardSelectedYear) {
+    const filter = document.getElementById("tableYearFilter")?.value || "dashboard";
+    if(filter === "all") return yearsList;
+    if(filter !== "dashboard") {
+      const y = parseInt(filter);
+      return isNaN(y) ? [] : [y];
+    }
+    return dashboardSelectedYear === "all" ? yearsList : [parseInt(dashboardSelectedYear)];
+  }
+
+  function formatTableValue(value, type) {
+    return type === "percent" ? formatPercent(normalizeRatioValue(value)) : formatMoney(value);
+  }
+
+  function buildIndustryRowValue(year, item) {
+    if(item.type === "money") return companies.reduce((sum, comp) => sum + Number(item.get(year, comp) || 0), 0);
+    const revenueTotal = getIndustryTotal(year, "revenue");
+    if(item.key === "netProfitMargin") return revenueTotal ? getIndustryTotal(year, "netProfit") / revenueTotal : 0;
+    if(item.key === "grossProfitMargin") return revenueTotal ? getIndustryTotal(year, "grossProfit") / revenueTotal : 0;
+    if(item.key === "returnOnInvestment") {
+      const assetsTotal = getIndustryTotal(year, "totalAssets");
+      return assetsTotal ? getIndustryTotal(year, "netProfit") / assetsTotal : 0;
+    }
+    return 0;
+  }
+
+  function buildFinancialTable(selectedYear) {
+    populateTableYearFilter();
+    populateTableItemFilter();
+    const container = document.getElementById("financialTableContainer");
+    if(!container) return;
+    const tableCompanies = getTableCompanies();
+    const tableItems = getTableItems();
+    const selectedYears = getTableYears(selectedYear);
+    if(!selectedYears.length || !tableItems.length || !tableCompanies.length) {
+      container.innerHTML = '<div class="empty-table-note">Upload Excel data and select a table year, company, and item to view records.</div>';
+      return;
+    }
+
+    const headerHtml = `<tr><th>Year</th><th>Financial Item</th>${tableCompanies.map(c => `<th style="color:${companyColors[c] || "#5DE4C7"};">${c}</th>`).join('')}</tr>`;
+    let bodyHtml = "";
+
+    selectedYears.forEach(y => {
+      tableItems.forEach((item, itemIndex) => {
+        const yearCell = itemIndex === 0 ? `<td rowspan="${tableItems.length}" style="font-weight:900; color:#5DE4C7;"><i class="fas fa-calendar-alt"></i> ${y}</td>` : "";
+        const valuesHtml = tableCompanies.map(c => `<td>${formatTableValue(item.get(y, c), item.type)}</td>`).join('');
+        bodyHtml += `<tr>${yearCell}<td class="item-name">${item.label}</td>${valuesHtml}</tr>`;
+      });
+    });
+
+    const tableHtml = `<table><thead>${headerHtml}</thead><tbody>${bodyHtml}</tbody></table>`;
+    container.innerHTML = tableHtml;
+  }
+
+
+  function buildDatasetPayload(financial, cash, liabilities, marketShare, years) {
+    return {
+      version: 1,
+      savedAt: new Date().toISOString(),
+      financial,
+      cash,
+      liabilities,
+      marketShare,
+      years
+    };
+  }
+
+  function applyDatasetPayload(payload, preserveSelection = false) {
+    if(!payload || !payload.financial || !payload.years) return false;
+    const previousYear = document.getElementById("yearSelect")?.value || "all";
+    financialData = payload.financial || {};
+    cashData = payload.cash || {};
+    liabilitiesData = payload.liabilities || {};
+    yearsList = (payload.years || []).map(Number).sort((a,b)=>a-b);
+    if(payload.marketShare) {
+      const normalizedMarketPayload = normalizeMarketSharePayload({ marketShare: payload.marketShare, years: payload.years, savedAt: payload.savedAt });
+      marketShareData = normalizedMarketPayload?.marketShare || marketShareData || {};
+      marketShareYearsList = (normalizedMarketPayload?.years || yearsList).map(Number).sort((a,b)=>a-b);
+    } else {
+      marketShareData = marketShareData || {};
+      marketShareYearsList = marketShareYearsList.length ? marketShareYearsList : yearsList;
+    }
+    if(yearsList.length === 0) return false;
+    updateYearDropdown();
+    let selectedYear = "all";
+    if(preserveSelection && (previousYear === "all" || yearsList.includes(parseInt(previousYear)))) selectedYear = previousYear;
+    const yearSelect = document.getElementById("yearSelect");
+    if(yearSelect) yearSelect.value = selectedYear;
+    if(!marketShareData || Object.keys(marketShareData).length === 0) marketShareData = deriveMarketShareFromFinancial();
+    recalculateRegulatoryFeeRates();
+    updateKPI(selectedYear);
+    renderAllCharts(selectedYear);
+    return true;
+  }
+
+  function saveDatasetPayload(payload) {
+    try {
+      localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(payload));
+    } catch(err) {
+      console.warn("Dashboard values were loaded but could not be stored in browser localStorage.", err);
+    }
+  }
+
+  function loadDatasetPayload() {
+    try {
+      const raw = localStorage.getItem(DASHBOARD_CACHE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch(err) {
+      console.warn("Could not load saved dashboard snapshot.", err);
+      return null;
+    }
+  }
+
+  function getDatasetChangeSummary(oldPayload, newPayload) {
+    if(!oldPayload || !oldPayload.years || !oldPayload.financial) {
+      return "First upload captured and hardcoded in this browser.";
+    }
+    const oldYears = (oldPayload.years || []).map(String);
+    const newYears = (newPayload.years || []).map(String);
+    const addedYears = newYears.filter(y => !oldYears.includes(y));
+    const removedYears = oldYears.filter(y => !newYears.includes(y));
+    let changedValues = 0;
+    newYears.forEach(y => {
+      companies.forEach(comp => {
+        const newD = newPayload.financial?.[y]?.[comp] || {};
+        const oldD = oldPayload.financial?.[y]?.[comp] || {};
+        Object.keys(newD).forEach(k => {
+          if(JSON.stringify(newD[k]) !== JSON.stringify(oldD[k])) changedValues += 1;
+        });
+      });
+    });
+    const parts = [];
+    if(addedYears.length) parts.push(`New sheet(s): ${addedYears.join(", ")}`);
+    if(removedYears.length) parts.push(`Removed sheet(s): ${removedYears.join(", ")}`);
+    if(changedValues) parts.push(`${changedValues} changed value(s)`);
+    return parts.length ? parts.join(" | ") : "No data changes detected; saved snapshot refreshed.";
+  }
+
+
+  function updateYearDropdown() {
+    const select = document.getElementById("yearSelect");
+    if(!select) return;
+    let options = '<option value="all">📊 ALL YEARS (Trend)</option>';
+    yearsList.forEach(y => { options += `<option value="${y}">${y}</option>`; });
+    select.innerHTML = options;
+    select.value = "all";
+    populateTableYearFilter();
+    populateMarketShareTableYearFilter();
+  }
+
+  // AI prediction using dynamic data
+  function runPrediction() {
+    const metric = document.getElementById("predictMetric").value;
+    const company = document.getElementById("predictCompany").value;
+    const years = [], values = [];
+    yearsList.forEach(y => {
+      const v = financialData[y]?.[company]?.[metric];
+      if(v !== undefined && v !== null && v !== 0) { years.push(y); values.push(v); }
+    });
+    if(values.length < 3) { document.getElementById("predictionOutput").innerHTML = "⚠️ Insufficient historical data for prediction."; return; }
+    let n = years.length, sumX=0, sumY=0, sumXY=0, sumX2=0;
+    for(let i=0;i<n;i++) { let x=years[i], y=values[i]; sumX+=x; sumY+=y; sumXY+=x*y; sumX2+=x*x; }
+    const slope = (n*sumXY - sumX*sumY) / (n*sumX2 - sumX*sumX);
+    const intercept = (sumY - slope*sumX)/n;
+    const pred2026 = slope * 2026 + intercept;
+    document.getElementById("predictionOutput").innerHTML = `🤖 ${company} ${metric} forecast 2026: ${formatMoney(pred2026)} (linear trend)`;
+  }
+
+  // Main load handler
+  async function handleExcelUpload(file) {
+    try {
+      const { financial, cash, liabilities, marketShare, years } = await parseExcelAndBuildData(file);
+      if(!years || years.length === 0) throw new Error("No valid year sheets found.");
+      const previousPayload = loadDatasetPayload();
+      const newPayload = buildDatasetPayload(financial, cash, liabilities, marketShare, years);
+      const changeSummary = getDatasetChangeSummary(previousPayload, newPayload);
+
+      // This is the hardcoded working dataset for the dashboard session and future reloads.
+      saveDatasetPayload(newPayload);
+      saveMarketSharePayload(buildMarketSharePayload(marketShare, years));
+      applyDatasetPayload(newPayload, true);
+
+      document.getElementById("predictionOutput").innerHTML = `✅ Excel values captured and hardcoded in the dashboard. ${changeSummary}`;
+    } catch(err) {
+      alert("Error parsing Excel: " + (err.message || err));
+      console.error(err);
+    }
+  }
+
+  // Event listeners
+  document.getElementById("uploadExcelBtn").addEventListener("click", () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".xlsx, .xls";
+    input.value = "";
+    input.onchange = (e) => {
+      if(e.target.files.length) {
+        const selectedFile = e.target.files[0];
+        handleExcelUpload(selectedFile);
+        e.target.value = "";
+      }
+    };
+    input.click();
+  });
+  document.getElementById("uploadRegulatoryExcelBtn").addEventListener("click", () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".xlsx, .xls";
+    input.value = "";
+    input.onchange = (e) => {
+      if(e.target.files.length) {
+        const selectedFile = e.target.files[0];
+        handleRegulatoryExcelUpload(selectedFile);
+        e.target.value = "";
+      }
+    };
+    input.click();
+  });
+  document.getElementById("yearSelect").addEventListener("change", (e) => {
+    const val = e.target.value;
+    updateKPI(val);
+    renderAllCharts(val);
+  });
+  document.getElementById("networkSelect").addEventListener("change", () => {
+    const val = document.getElementById("yearSelect").value;
+    updateKPI(val);
+    renderAllCharts(val);
+  });
+  document.getElementById("tableYearFilter").addEventListener("change", () => {
+    const selectedYear = document.getElementById("yearSelect").value || "all";
+    buildFinancialTable(selectedYear);
+  });
+  document.getElementById("tableCompanyFilter").addEventListener("change", () => {
+    const selectedYear = document.getElementById("yearSelect").value || "all";
+    buildFinancialTable(selectedYear);
+  });
+  document.getElementById("tableItemFilter").addEventListener("change", () => {
+    const selectedYear = document.getElementById("yearSelect").value || "all";
+    buildFinancialTable(selectedYear);
+  });
+  document.getElementById("marketShareMetricFilter").addEventListener("change", (e) => {
+    activeMarketShareMetric = e.target.value || "revenue";
+    const selectedYear = document.getElementById("yearSelect").value || "all";
+    renderMarketShareAnalytics(selectedYear);
+  });
+  document.getElementById("marketShareTableYearFilter").addEventListener("change", () => {
+    const selectedYear = document.getElementById("yearSelect").value || "all";
+    buildMarketShareTable(selectedYear);
+  });
+  document.getElementById("marketShareTableCompanyFilter").addEventListener("change", () => {
+    const selectedYear = document.getElementById("yearSelect").value || "all";
+    buildMarketShareTable(selectedYear);
+  });
+  document.getElementById("regulatoryTableYearFilter").addEventListener("change", () => {
+    const selectedYear = document.getElementById("yearSelect").value || "all";
+    buildRegulatoryFeeTable(selectedYear);
+  });
+  document.getElementById("regulatoryTableCompanyFilter").addEventListener("change", () => {
+    const selectedYear = document.getElementById("yearSelect").value || "all";
+    buildRegulatoryFeeTable(selectedYear);
+  });
+  document.getElementById("regulatoryTableItemFilter").addEventListener("change", () => {
+    const selectedYear = document.getElementById("yearSelect").value || "all";
+    buildRegulatoryFeeTable(selectedYear);
+  });
+  document.querySelectorAll(".profit-metric-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      activeProfitMetric = btn.dataset.profitMetric || "netProfit";
+      document.querySelectorAll(".profit-metric-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      const selectedYear = document.getElementById("yearSelect").value || "all";
+      renderAllCharts(selectedYear);
+    });
+  });
+  document.querySelectorAll(".trend-metric-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      activeTrendMetric = btn.dataset.trendMetric || "operatingEfficiency";
+      document.querySelectorAll(".trend-metric-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      renderTrendAnalysisChart();
+      updateInsightsPanel(document.getElementById("yearSelect").value || "all");
+    });
+  });
+  document.getElementById("runPredictionBtn").addEventListener("click", runPrediction);
+  // Download buttons
+  const downloadChart = (canvasId, filename) => {
+    const canvas = document.getElementById(canvasId);
+    if(canvas) { const a=document.createElement("a"); a.download=filename+".png"; a.href=canvas.toDataURL(); a.click(); }
+  };
+  document.getElementById("downloadChart1Btn").onclick = () => downloadChart("mainChart","revenue_ebitda");
+  document.getElementById("downloadYoYBtn").onclick = () => downloadChart("yoyChart","yoy_growth");
+  document.getElementById("downloadProfitBtn").onclick = () => downloadChart("profitAnalysisChart","profitability");
+  document.getElementById("downloadBenchBtn").onclick = () => downloadChart("benchmarkChart","benchmark");
+  document.getElementById("downloadEVBtn").onclick = () => downloadChart("evChart","enterprise_value");
+  document.getElementById("downloadAssetsLiabBtn").onclick = () => downloadChart("assetsLiabChart","assets_liabilities");
+  document.getElementById("downloadTrendBtn").onclick = () => downloadChart("trendAnalysisChart","financial_trend_analysis");
+  document.getElementById("downloadMarketShareTrendBtn").onclick = () => downloadChart("marketShareTrendChart","market_share_trend");
+  document.getElementById("downloadMarketShareDistributionBtn").onclick = () => downloadChart("marketShareDistributionChart","market_share_distribution");
+  document.getElementById("downloadRegFeeBtn").onclick = () => downloadChart("regulatoryFeeChart","regulatory_fees_received");
+  document.getElementById("downloadRegRateBtn").onclick = () => downloadChart("regulatoryFeeRateChart","regulatory_fee_to_revenue");
+  document.getElementById("downloadTableBtn").onclick = () => {
+    const sel = document.getElementById("yearSelect").value || "all";
+    const selectedYears = getTableYears(sel);
+    const tableItems = getTableItems();
+    const tableCompanies = getTableCompanies();
+    let csv = `Year,Financial Item,${tableCompanies.join(",")}\n`;
+    selectedYears.forEach(y => {
+      tableItems.forEach(item => {
+        const rowValues = tableCompanies.map(c => item.get(y, c));
+        csv += `${y},${item.label},${rowValues.join(",")}\n`;
+      });
+    });
+    const blob = new Blob([csv], {type:"text/csv"}); const link=document.createElement("a"); link.href=URL.createObjectURL(blob); link.download="financial_data_filtered.csv"; link.click();
+  };
+
+
+  // Initial state: load the last hardcoded Excel snapshot from this browser, if available.
+  const cachedRegulatoryPayload = loadRegulatoryPayload() || DEFAULT_REGULATORY_PAYLOAD;
+  if(cachedRegulatoryPayload) applyRegulatoryPayload(cachedRegulatoryPayload, false);
+  const cachedMarketSharePayload = loadMarketSharePayload() || DEFAULT_MARKET_SHARE_PAYLOAD;
+  if(cachedMarketSharePayload) applyMarketSharePayload(cachedMarketSharePayload);
+  const cachedPayload = loadDatasetPayload() || DEFAULT_FINANCIAL_PAYLOAD;
+  if(cachedPayload && applyDatasetPayload(cachedPayload, false)) {
+    const savedAtText = cachedPayload.savedAt && !cachedPayload.savedAt.startsWith("embedded") ? new Date(cachedPayload.savedAt).toLocaleString() : "the embedded uploaded financial workbook";
+    document.getElementById("predictionOutput").innerHTML = `✅ Loaded financial data from ${savedAtText}. The regulatory fee workbook is also loaded into the same dashboard. Upload revised workbooks to apply modifications or new sheets.`;
+    applyRegulatoryPayload(cachedRegulatoryPayload, false);
+  } else {
+    updateKPI("all");
+    renderAllCharts("all");
+    updateInsightsPanel("all");
+    renderMarketShareAnalytics("all");
+    renderRegulatoryFeeAnalytics("all");
+  }
+</script>
+</body>
+</html>

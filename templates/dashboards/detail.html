@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <main class="page">
+    <p><a href="{% url 'dashboard-index' %}">Back to dashboards</a></p>
+    <h1>{{ category.name }}</h1>
+    <p>This dashboard is connected to the authenticated metrics API. The Chart.js view will be migrated here after the importer is populated.</p>
+    <p><a href="{% url 'dashboard-metrics-api' category.slug %}?year=all">Open metrics JSON</a></p>
+  </main>
+{% endblock %}
