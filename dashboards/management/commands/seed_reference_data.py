@@ -72,4 +72,12 @@ class Command(BaseCommand):
                 defaults={"label": label, "unit_type": unit_type, "aliases": aliases},
             )
 
+        mobile_network = categories["mobile-network"]
+        for key, label, unit_type, aliases in BWA_METRICS:
+            MetricDefinition.objects.update_or_create(
+                category=mobile_network,
+                key=key,
+                defaults={"label": label, "unit_type": unit_type, "aliases": aliases},
+            )
+
         self.stdout.write(self.style.SUCCESS("Reference data seeded."))
