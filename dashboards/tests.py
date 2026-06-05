@@ -287,7 +287,7 @@ class WorkbookImporterTests(TestCase):
         self.assertEqual(val_revenue.value, Decimal("1234567.890000"))
 
     def test_real_mno_financials_import(self):
-        project_dir = "/Users/dozzlee/Documents/GitHub/Financial-Dashboards"
+        project_dir = settings.BASE_DIR
         file_name = "MNO FINANCIALS TO 2025 working Sheet -edit.xlsx"
         full_path = os.path.join(project_dir, file_name)
         
@@ -315,7 +315,7 @@ class WorkbookImporterTests(TestCase):
             self.assertEqual(mtn_rev.value, Decimal("13758565000.000000"))
 
     def test_real_regulatory_fees_import(self):
-        project_dir = "/Users/dozzlee/Documents/GitHub/Financial-Dashboards"
+        project_dir = settings.BASE_DIR
         file_name = "1% Regulatory Fee- MNOs- V2.xlsx"
         full_path = os.path.join(project_dir, file_name)
         
@@ -342,7 +342,7 @@ class WorkbookImporterTests(TestCase):
             self.assertAlmostEqual(mtn_fee.payment_received, Decimal("131649797.25"), places=2)
 
     def test_real_bwa_quarterly_subscriber_import(self):
-        project_dir = "/Users/dozzlee/Documents/GitHub/Financial-Dashboards"
+        project_dir = settings.BASE_DIR
         file_name = "BWA_1st Quarter 2026 - Updated Tables and Figures in Quarterly Statistical Reports 13.03.26.xlsx"
         full_path = os.path.join(project_dir, file_name)
         

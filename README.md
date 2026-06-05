@@ -9,7 +9,7 @@ This branch starts the migration from static HTML dashboards to a Django/Postgre
 - Dashboard, metric, import, market share, regulatory fee, and audit models
 - Django Admin registration
 - Admin upload entry point for workbook imports
-- First server-side importer for the BWA/Telesol dashboard
+- Server-side importers for BWA/Telesol financial workbooks, BWA quarterly subscriber workbooks, MNO financial workbooks, and MNO regulatory fee workbooks
 - Email/TOTP-capable 2FA dependency configuration
 - Architecture and security handoff docs in `docs/`
 
@@ -40,6 +40,6 @@ DATABASE_ENGINE=sqlite
 2. Run `python manage.py seed_reference_data` first so categories, companies, and metrics exist.
 3. Open `Workbook imports`.
 4. Use the `Upload workbook` admin action link.
-5. Select `BWA` and upload an `.xlsx` workbook with year-named sheets.
+5. Select the relevant dashboard category and upload an `.xlsx` workbook.
 
-Only BWA parsing is implemented in this first slice. The remaining dashboards should reuse the same service pattern.
+Implemented import paths currently cover BWA year-named financial sheets, BWA quarterly subscriber reports, MNO financial sheets, and MNO regulatory fee workbooks. The remaining dashboard categories should reuse the same service pattern.
