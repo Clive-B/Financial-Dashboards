@@ -42,8 +42,10 @@
       color: #e5e7eb;
     }
   </style>
+  {% block extra_styles %}{% endblock %}
 </head>
 <body>
   {% block content %}{% endblock %}
+  {% block extra_scripts %}{% endblock %}
 </body>
 </html>
